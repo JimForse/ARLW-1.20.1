@@ -16,7 +16,7 @@
 	"icon": "assets/axorunelostworlds/icon.png",
 	"environment": "*",
 	"entrypoints": {
-		"main": [
+		"server": [
 			"rw.modden.Axorunelostworlds"
 		],
 		"fabric-datagen": [
