@@ -16,8 +16,12 @@
 	"icon": "assets/axorunelostworlds/icon.png",
 	"environment": "*",
 	"entrypoints": {
-		"server": [
+		"main": [
 			"rw.modden.Axorunelostworlds"
+		],
+		"client": [
+			"rw.modden.combat.CombatMechanics",
+			"rw.modden.combat.StuntMechanicClient"
 		],
 		"fabric-datagen": [
 			"rw.modden.AxorunelostworldsDataGenerator"
