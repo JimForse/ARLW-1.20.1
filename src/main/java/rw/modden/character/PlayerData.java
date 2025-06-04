@@ -1,25 +1,44 @@
 package rw.modden.character;
 
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.PersistentState;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributes;
 import rw.modden.Axorunelostworlds;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributes;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class PlayerData extends PersistentState {
     private static final String NBT_KEY = Axorunelostworlds.MOD_ID + ":player_data";
-    private Character character;
+    private Character activeCharacter;
+    private List<Character> combatCharacters = new ArrayList<>(3);
     private int starLevel;
     private ModInventory inventory;
     private final UUID playerUuid;
+    private Identifier skinId;
+    private boolean combatMode;
+    private boolean eventCombatMode;
+
+    private static final UUID HEALTH_MODIFIER_UUID = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+    private static final UUID DAMAGE_MODIFIER_UUID = UUID.fromString("b2c3d4e5-f6a7-8901-bcde-f2345678901a");
 
     public PlayerData(UUID playerUuid) {
         this.playerUuid = playerUuid;
-        this.character = null;
+        this.activeCharacter = null;
         this.starLevel = 0;
         this.inventory = new ModInventory();
+        this.combatMode = false;
+        this.eventCombatMode = false;
     }
 
     public static PlayerData getOrCreate(ServerPlayerEntity player) {
@@ -35,20 +54,97 @@ public class PlayerData extends PersistentState {
         return data;
     }
 
-    public void setCharacter(Character character) {
-        this.character = character;
-        if (character != null) {
-            this.starLevel = character.getStarLevel();
-            this.inventory.addWeapon(character.getStartingWeapon());
+    public boolean hasCharacter(String playerName) {
+        for (Character character : inventory.getCharacters()) {
+            if (CharacterInitializer.getCharacter(playerName) == character) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void setCharacter(Character character, ServerPlayerEntity player) {
+        inventory.addCharacter(character);
+        if (!combatCharacters.contains(character) && combatCharacters.size() < 3) {
+            combatCharacters.add(character);
+        }
+        if (activeCharacter == null) {
+            activeCharacter = character;
+        }
+        this.starLevel = character.getStarLevel();
+        if (combatMode && activeCharacter != null) {
+            applyToPlayer(player);
         }
         markDirty();
     }
 
-    public void applyToPlayer(ServerPlayerEntity player) {
-        if (character != null) {
-            character.applyToPlayer(player);
-            System.out.println("PlayerData: Applied character to player: " + player.getGameProfile().getName());
+    public void switchCharacter(int index, ServerPlayerEntity player) {
+        if (combatMode && !eventCombatMode && index >= 0 && index < combatCharacters.size()) {
+            activeCharacter = combatCharacters.get(index);
+            applyToPlayer(player);
+            syncSkin(player);
         }
+    }
+
+    public void setCombatMode(boolean mode, boolean isEvent, ServerPlayerEntity player) {
+        this.combatMode = mode;
+        this.eventCombatMode = isEvent;
+        if (mode && activeCharacter != null) {
+            applyToPlayer(player);
+        } else {
+            resetPlayerAttributes(player);
+            setSkinId(null, player);
+        }
+        syncCombatMode(player);
+    }
+
+    public boolean isCombatMode() {
+        return combatMode;
+    }
+
+    public boolean isEventCombatMode() {
+        return eventCombatMode;
+    }
+
+    public List<Character> getCombatCharacters() {
+        return combatCharacters;
+    }
+
+    public Character getActiveCharacter() {
+        return activeCharacter;
+    }
+
+    public void applyToPlayer(ServerPlayerEntity player) {
+        if (combatMode && activeCharacter != null) {
+            activeCharacter.applyToPlayer(player);
+            syncSkin(player);
+        }
+    }
+
+    private void resetPlayerAttributes(ServerPlayerEntity player) {
+        EntityAttributeInstance healthAttr = player.getAttributes().getCustomInstance(EntityAttributes.GENERIC_MAX_HEALTH);
+        if (healthAttr != null) {
+            healthAttr.removeModifier(HEALTH_MODIFIER_UUID);
+            player.setHealth(20.0f);
+        }
+        EntityAttributeInstance damageAttr = player.getAttributes().getCustomInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+        if (damageAttr != null) {
+            damageAttr.removeModifier(DAMAGE_MODIFIER_UUID);
+        }
+    }
+
+    private void syncSkin(ServerPlayerEntity player) {
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeIdentifier(skinId != null ? skinId : new Identifier("minecraft", "textures/entity/player/steve.png"));
+        ServerPlayNetworking.send(player, new Identifier(Axorunelostworlds.MOD_ID, "sync_skin"), buf);
+        System.out.println("PlayerData: Sent sync_skin packet for skin: " + (skinId != null ? skinId : "default"));
+    }
+
+    private void syncCombatMode(ServerPlayerEntity player) {
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeBoolean(combatMode);
+        buf.writeBoolean(eventCombatMode);
+        ServerPlayNetworking.send(player, new Identifier(Axorunelostworlds.MOD_ID, "sync_combat_mode"), buf);
     }
 
     public ModInventory getInventory() {
@@ -57,6 +153,12 @@ public class PlayerData extends PersistentState {
 
     public int getStarLevel() {
         return starLevel;
+    }
+
+    public void setSkinId(Identifier skinId, ServerPlayerEntity player) {
+        this.skinId = skinId;
+        syncSkin(player);
+        markDirty();
     }
 
     public void setStarLevel(int starLevel) {
@@ -72,8 +174,10 @@ public class PlayerData extends PersistentState {
     public NbtCompound writeNbt(NbtCompound nbt) {
         NbtCompound dataNbt = new NbtCompound();
         dataNbt.putInt("StarLevel", starLevel);
-        if (character != null) {
-            dataNbt.putString("CharacterType", character.getType().name());
+        dataNbt.putBoolean("CombatMode", combatMode);
+        dataNbt.putBoolean("EventCombatMode", eventCombatMode);
+        if (activeCharacter != null) {
+            dataNbt.putString("CharacterType", activeCharacter.getType().name());
         }
         dataNbt.put("Inventory", inventory.writeNbt(new NbtCompound()));
         nbt.put(NBT_KEY + "_" + playerUuid.toString(), dataNbt);
@@ -86,13 +190,23 @@ public class PlayerData extends PersistentState {
         if (nbt.contains(key)) {
             NbtCompound dataNbt = nbt.getCompound(key);
             data.starLevel = dataNbt.getInt("StarLevel");
+            data.combatMode = dataNbt.getBoolean("CombatMode");
+            data.eventCombatMode = dataNbt.getBoolean("EventCombatMode");
             if (dataNbt.contains("CharacterType")) {
                 String type = dataNbt.getString("CharacterType");
                 Character character = CharacterInitializer.getCharacter(
-                        type.equals("ASSASSIN") ? "Kllima777" : "unknown"
+                        type.equals(Character.CharacterType.SUPPORT.name()) ? "kllima777" : "unknown"
                 );
                 if (character != null) {
-                    data.character = character;
+                    data.inventory.addCharacter(character);
+                    if (!data.combatCharacters.contains(character) && data.combatCharacters.size() < 3) {
+                        data.combatCharacters.add(character);
+                    }
+                    if (data.activeCharacter == null) {
+                        data.activeCharacter = character;
+                    }
+                    data.starLevel = character.getStarLevel();
+                    data.markDirty();
                 }
             }
             data.inventory = ModInventory.fromNbt(dataNbt.getCompound("Inventory"));

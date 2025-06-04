@@ -9,34 +9,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CharacterInitializer {
-    private static final List<CharacterEntry> CHARACTERS = new ArrayList<>();
+    private static final List<CharacterEntry> CHARACTERS = new ArrayList<CharacterEntry>();
 
     public static void initialize() {
         System.out.println("CharacterInitializer: Initializing characters...");
 
-        // Регистрация персонажа Kllima777
         registerCharacter(
-                "Kllima777",
+                "kllima777",
                 new Kllima777Character(),
                 new Identifier(Axorunelostworlds.MOD_ID, "skins/kllima777")
         );
 
-        // TODO: Добавить других персонажей
-
-        // Обработчик входа игрока
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.getPlayer();
             String playerName = player.getGameProfile().getName().toLowerCase();
             System.out.println("CharacterInitializer: Player joined: " + playerName);
 
-            for (CharacterEntry entry : CHARACTERS) {
+            for (CharacterEntry entry:CHARACTERS) {
                 if (entry.playerName.equals(playerName)) {
-                    System.out.println("CharacterInitializer: Assigning character for " + playerName);
-                    // Загрузка сохранённых данных или создание нового персонажа
                     PlayerData playerData = PlayerData.getOrCreate(player);
-                    playerData.setCharacter(entry.character);
-                    playerData.applyToPlayer(player);
-                    // TODO: Применить скин (entry.skinId)
+                    if (!playerData.hasCharacter(playerName)) {
+                        playerData.setCharacter(entry.character, player);
+                        System.out.println("CharacterInitializer: Added character for " + playerName);
+                    }
                     return;
                 }
             }

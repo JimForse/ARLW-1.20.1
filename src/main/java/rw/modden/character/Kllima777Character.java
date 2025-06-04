@@ -3,12 +3,13 @@ package rw.modden.character;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Identifier;
 import rw.modden.weapon.TrainingBaton;
 import rw.modden.weapon.Weapon;
 
 public class Kllima777Character extends Character {
     public Kllima777Character() {
-        super(CharacterType.ASSASSIN, 0, new String[]{"speed_boost", "critical_hit"});
+        super(CharacterType.SUPPORT, 0, new String[]{"speed_boost", "critical_hit"}, "kllima777");
         // TODO: Доработать бафы
         // TODO: Добавить пассивные способности
         // TODO: Уточнить статы

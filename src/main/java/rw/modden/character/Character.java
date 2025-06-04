@@ -4,7 +4,10 @@ import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Identifier;
 import rw.modden.weapon.Weapon;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributes;
 
 public abstract class Character {
     public enum CharacterType {
@@ -29,14 +32,16 @@ public abstract class Character {
     protected int damage;
     protected float stunModifier;
     protected final String[] buffs;
+    protected final Identifier skin;
 
-    public Character(CharacterType type, int starLevel, String[] buffs) {
+    public Character(CharacterType type, int starLevel, String[] buffs, String playerName) {
         this.type = type;
         this.starLevel = clamp(starLevel, 0, 5);
         this.health = type.maxHealth * (1 + starLevel * 0.2f);
         this.damage = (int) (type.baseDamage * (1 + starLevel * 0.2f));
         this.stunModifier = type.stunModifier * (1 + starLevel * 0.1f);
         this.buffs = buffs != null ? buffs : new String[0];
+        this.skin = CharacterInitializer.getSkin(playerName);
     }
 
     private static int clamp(int value, int min, int max) {
@@ -44,7 +49,9 @@ public abstract class Character {
     }
 
     public void applyToPlayer(ServerPlayerEntity player) {
-        // Применение здоровья
+        PlayerData data = PlayerData.getOrCreate(player);
+        if (!data.isCombatMode()) return;
+
         EntityAttributeInstance healthAttr = player.getAttributes().getCustomInstance(EntityAttributes.GENERIC_MAX_HEALTH);
         if (healthAttr != null) {
             healthAttr.addPersistentModifier(new EntityAttributeModifier(
@@ -55,7 +62,6 @@ public abstract class Character {
         }
         player.setHealth(this.health);
 
-        // Применение урона
         EntityAttributeInstance damageAttr = player.getAttributes().getCustomInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         if (damageAttr != null) {
             damageAttr.addPersistentModifier(new EntityAttributeModifier(
@@ -65,15 +71,8 @@ public abstract class Character {
             ));
         }
 
-        // Применение бафов
         applyBuffs(player);
-
-        // Добавление стартового оружия
-        PlayerData data = PlayerData.getOrCreate(player);
-        Weapon startingWeapon = getStartingWeapon();
-        if (startingWeapon != null && data.getInventory().getWeapons().isEmpty()) {
-            data.getInventory().addWeapon(startingWeapon);
-        }
+        data.setSkinId(this.skin, player);
     }
 
     protected abstract void applyBuffs(ServerPlayerEntity player);
@@ -102,6 +101,10 @@ public abstract class Character {
 
     public String[] getBuffs() {
         return buffs;
+    }
+
+    public Identifier getSkin() {
+        return skin;
     }
 
     protected boolean containsBuff(String buff) {
