@@ -49,6 +49,7 @@ public abstract class Character {
     }
 
     public void applyToPlayer(ServerPlayerEntity player) {
+        // Применение здоровья
         PlayerData data = PlayerData.getOrCreate(player);
         if (!data.isCombatMode()) return;
 
@@ -62,6 +63,7 @@ public abstract class Character {
         }
         player.setHealth(this.health);
 
+        // Применение урона
         EntityAttributeInstance damageAttr = player.getAttributes().getCustomInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         if (damageAttr != null) {
             damageAttr.addPersistentModifier(new EntityAttributeModifier(
@@ -71,6 +73,7 @@ public abstract class Character {
             ));
         }
 
+        // Применение бафов
         applyBuffs(player);
         data.setSkinId(this.skin, player);
     }

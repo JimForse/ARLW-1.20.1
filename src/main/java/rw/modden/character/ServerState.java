@@ -14,6 +14,7 @@ public class ServerState extends PersistentState {
     private final Map<UUID, PlayerData> playerData = new HashMap<>();
 
     public static ServerState get(MinecraftServer server) {
+        // TODO: сделать для 13 кастомных миров
         return server.getWorld(World.OVERWORLD).getServer().getWorld(World.OVERWORLD)
                 .getPersistentStateManager().getOrCreate(ServerState::fromNbt, ServerState::new, KEY);
     }

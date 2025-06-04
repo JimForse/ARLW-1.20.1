@@ -20,11 +20,15 @@ public class CharacterInitializer {
                 new Identifier(Axorunelostworlds.MOD_ID, "skins/kllima777")
         );
 
+        // TODO: Добавить других персонажей
+
+        // Обработчик входа игрока
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.getPlayer();
             String playerName = player.getGameProfile().getName().toLowerCase();
             System.out.println("CharacterInitializer: Player joined: " + playerName);
 
+            // Загрузка сохранённых данных или создание нового персонажа
             for (CharacterEntry entry:CHARACTERS) {
                 if (entry.playerName.equals(playerName)) {
                     PlayerData playerData = PlayerData.getOrCreate(player);

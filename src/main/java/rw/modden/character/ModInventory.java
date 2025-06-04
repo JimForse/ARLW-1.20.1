@@ -51,6 +51,7 @@ public class ModInventory {
                 weaponList.add(NbtString.of("TrainingBaton"));
             }
         }
+        // TODO: Добавить поддержку других типов оружия
         nbt.put("Weapons", weaponList);
 
         NbtList accessoryList = new NbtList();
@@ -79,6 +80,7 @@ public class ModInventory {
             if (weaponType.equals("TrainingBaton")) {
                 inventory.weapons.add(new TrainingBaton());
             }
+            // TODO: Добавить поддержку других типов оружия
         }
         NbtList accessoryList = nbt.getList("Accessories", NbtString.STRING_TYPE);
         for (int i = 0; i < accessoryList.size(); i++) {
