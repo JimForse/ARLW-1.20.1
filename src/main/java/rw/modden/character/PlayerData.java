@@ -11,8 +11,7 @@ import net.minecraft.world.PersistentState;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
 import rw.modden.Axorunelostworlds;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
-import net.minecraft.entity.attribute.EntityAttributes;
+import rw.modden.combat.CombatState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,8 +25,7 @@ public class PlayerData extends PersistentState {
     private ModInventory inventory;
     private final UUID playerUuid;
     private Identifier skinId;
-    private boolean combatMode;
-    private boolean eventCombatMode;
+    private CombatState combatState = CombatState.NONE;
 
     private static final UUID HEALTH_MODIFIER_UUID = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
     private static final UUID DAMAGE_MODIFIER_UUID = UUID.fromString("b2c3d4e5-f6a7-8901-bcde-f2345678901a");
@@ -37,8 +35,7 @@ public class PlayerData extends PersistentState {
         this.activeCharacter = null;
         this.starLevel = 0;
         this.inventory = new ModInventory();
-        this.combatMode = false;
-        this.eventCombatMode = false;
+        this.combatState = CombatState.NONE;
     }
 
     public static PlayerData getOrCreate(ServerPlayerEntity player) {
@@ -51,7 +48,23 @@ public class PlayerData extends PersistentState {
             data = new PlayerData(player.getUuid());
             state.setPlayerData(player.getUuid(), data);
         }
+        if (data.combatState == CombatState.NONE) {
+            data.resetPlayerAttributes(player);
+            data.setSkinId(null, player);
+        }
         return data;
+    }
+
+    public void applyToPlayer(ServerPlayerEntity player) {
+        if (combatState != CombatState.NONE && activeCharacter != null) {
+            System.out.println("PlayerData: Applying attributes for player: " + player.getGameProfile().getName() + ", combatState: " + combatState);
+            activeCharacter.applyToPlayer(player);
+            setSkinId(new Identifier(Axorunelostworlds.MOD_ID, "textures/skins/" + player.getGameProfile().getName().toLowerCase()), player);
+        } else {
+            System.out.println("PlayerData: Skipped applying attributes for player: " + player.getGameProfile().getName() + ", combatState: " + combatState);
+            resetPlayerAttributes(player);
+            setSkinId(null, player);
+        }
     }
 
     public boolean hasCharacter(String playerName) {
@@ -72,38 +85,48 @@ public class PlayerData extends PersistentState {
             activeCharacter = character;
         }
         this.starLevel = character.getStarLevel();
-        if (combatMode && activeCharacter != null) {
+        if (combatState != CombatState.NONE && activeCharacter != null) {
             applyToPlayer(player);
         }
         markDirty();
     }
 
+    public void setActiveCharacter(Character character) {
+        if (this.activeCharacter != character) {
+            this.activeCharacter = character;
+            markDirty();
+            System.out.println("PlayerData: Set active character to: " + (character != null ? character.getType().name() : "null"));
+        }
+    }
+
     public void switchCharacter(int index, ServerPlayerEntity player) {
-        if (combatMode && !eventCombatMode && index >= 0 && index < combatCharacters.size()) {
+        if (combatState == CombatState.NORMAL && index >= 0 && index < combatCharacters.size()) {
             activeCharacter = combatCharacters.get(index);
             applyToPlayer(player);
             syncSkin(player);
         }
     }
 
-    public void setCombatMode(boolean mode, boolean isEvent, ServerPlayerEntity player) {
-        this.combatMode = mode;
-        this.eventCombatMode = isEvent;
-        if (mode && activeCharacter != null) {
+    public void setCombatMode(CombatState state, ServerPlayerEntity player) {
+        this.combatState = state;
+        if (state != CombatState.NONE && activeCharacter != null) {
+            System.out.println("PlayerData: Applying attributes for player: " + player.getGameProfile().getName() + ", combatState: " + state);
             applyToPlayer(player);
         } else {
+            System.out.println("PlayerData: Resetting attributes for player: " + player.getGameProfile().getName() + ", combatState: " + state);
             resetPlayerAttributes(player);
             setSkinId(null, player);
         }
         syncCombatMode(player);
+        markDirty();
     }
 
     public boolean isCombatMode() {
-        return combatMode;
+        return combatState != CombatState.NONE;
     }
 
     public boolean isEventCombatMode() {
-        return eventCombatMode;
+        return combatState == CombatState.EVENT;
     }
 
     public List<Character> getCombatCharacters() {
@@ -112,13 +135,6 @@ public class PlayerData extends PersistentState {
 
     public Character getActiveCharacter() {
         return activeCharacter;
-    }
-
-    public void applyToPlayer(ServerPlayerEntity player) {
-        if (combatMode && activeCharacter != null) {
-            activeCharacter.applyToPlayer(player);
-            syncSkin(player);
-        }
     }
 
     private void resetPlayerAttributes(ServerPlayerEntity player) {
@@ -142,9 +158,9 @@ public class PlayerData extends PersistentState {
 
     private void syncCombatMode(ServerPlayerEntity player) {
         PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeBoolean(combatMode);
-        buf.writeBoolean(eventCombatMode);
+        buf.writeInt(combatState.ordinal());
         ServerPlayNetworking.send(player, new Identifier(Axorunelostworlds.MOD_ID, "sync_combat_mode"), buf);
+        System.out.println("PlayerData: Sent sync_combat_mode packet for state: " + combatState);
     }
 
     public ModInventory getInventory() {
@@ -174,8 +190,7 @@ public class PlayerData extends PersistentState {
     public NbtCompound writeNbt(NbtCompound nbt) {
         NbtCompound dataNbt = new NbtCompound();
         dataNbt.putInt("StarLevel", starLevel);
-        dataNbt.putBoolean("CombatMode", combatMode);
-        dataNbt.putBoolean("EventCombatMode", eventCombatMode);
+        dataNbt.putInt("CombatState", combatState.ordinal());
         if (activeCharacter != null) {
             dataNbt.putString("CharacterType", activeCharacter.getType().name());
         }
@@ -190,8 +205,7 @@ public class PlayerData extends PersistentState {
         if (nbt.contains(key)) {
             NbtCompound dataNbt = nbt.getCompound(key);
             data.starLevel = dataNbt.getInt("StarLevel");
-            data.combatMode = dataNbt.getBoolean("CombatMode");
-            data.eventCombatMode = dataNbt.getBoolean("EventCombatMode");
+            data.combatState = CombatState.values()[dataNbt.getInt("CombatState")];
             if (dataNbt.contains("CharacterType")) {
                 String type = dataNbt.getString("CharacterType");
                 Character character = CharacterInitializer.getCharacter(

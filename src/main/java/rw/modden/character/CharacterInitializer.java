@@ -33,8 +33,12 @@ public class CharacterInitializer {
                 if (entry.playerName.equals(playerName)) {
                     PlayerData playerData = PlayerData.getOrCreate(player);
                     if (!playerData.hasCharacter(playerName)) {
-                        playerData.setCharacter(entry.character, player);
-                        System.out.println("CharacterInitializer: Added character for " + playerName);
+                        playerData.getInventory().addCharacter(entry.character);
+                        if (!playerData.getCombatCharacters().contains(entry.character) && playerData.getCombatCharacters().size() < 3) {
+                            playerData.getCombatCharacters().add(entry.character);
+                        }
+                        playerData.markDirty();
+                        System.out.println("CharacterInitializer: Added character for " + playerName + " (not applied yet)");
                     }
                     return;
                 }

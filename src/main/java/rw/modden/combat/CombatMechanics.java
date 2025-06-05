@@ -29,9 +29,10 @@ public class CombatMechanics implements ClientModInitializer {
     public void onInitializeClient() {
     }
 
-    public static void setBattleStatus(boolean status, ServerPlayerEntity player) {
+    public static void setBattleStatus(CombatState state, ServerPlayerEntity player) {
         PlayerData data = PlayerData.getOrCreate(player);
-        data.setCombatMode(status, false, player);
+        data.setCombatMode(state, player);
+        // TODO: Добавить кнопку "Вступить в бой" в кастомное меню для активации CombatState.NORMAL
     }
 
     public static boolean isBattleActive() {

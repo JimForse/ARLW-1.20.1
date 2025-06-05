@@ -37,8 +37,10 @@ public class ServerCombatMechanics {
                             }
                             break;
                         case "toggle_battle":
-                            boolean isEvent = false; // TODO: Определить ивентовый бой
-                            data.setCombatMode(!data.isCombatMode(), isEvent, player);
+                            // TODO: Добавить логику для ивентового боя (CombatState.EVENT)
+                            CombatState newState = data.isCombatMode() ? CombatState.NONE : CombatState.NORMAL;
+                            data.setCombatMode(newState, player);
+                            System.out.println("ServerCombatMechanics: Toggled battle mode for " + player.getName().getString() + " to " + newState);
                             break;
                     }
                 }

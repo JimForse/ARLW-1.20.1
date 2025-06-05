@@ -1,6 +1,9 @@
 package rw.modden;
 
+import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.fabric.impl.screenhandler.client.ClientNetworking;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rw.modden.character.CharacterInitializer;

@@ -21,6 +21,8 @@
 		],
 		"client": [
 			"rw.modden.combat.CombatMechanics",
+			"rw.modden.ClientNetworking",
+			"rw.modden.KeyInput",
 			"rw.modden.combat.StuntMechanicClient"
 		],
 		"fabric-datagen": [
