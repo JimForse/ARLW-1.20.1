@@ -24,8 +24,7 @@ public class Axorunelostworlds implements ModInitializer {
 		CombatMechanics.initialize();
 		ServerCombatMechanics.initialize();
 		IntermediateInitializer.initialize();
-		CharacterInitializer.initialize();
-		BattleCommand.register();
+		BattleCommand.initialize();
 		// ModDimensions.register();
 	}
 }

@@ -6,8 +6,8 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import rw.modden.weapon.Weapon;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
-import net.minecraft.entity.attribute.EntityAttributes;
+
+import java.util.UUID;
 
 public abstract class Character {
     public enum CharacterType {
@@ -25,6 +25,9 @@ public abstract class Character {
             this.stunModifier = stunModifier;
         }
     }
+
+    private static final UUID HEALTH_MODIFIER_UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+    private static final UUID DAMAGE_MODIFIER_UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174001");
 
     protected final CharacterType type;
     protected int starLevel;
@@ -49,24 +52,31 @@ public abstract class Character {
     }
 
     public void applyToPlayer(ServerPlayerEntity player) {
-        // Применение здоровья
         PlayerData data = PlayerData.getOrCreate(player);
-        if (!data.isCombatMode()) return;
+        if (!data.isCombatMode()) {
+            System.out.println("Character: Skipped applying attributes for " + player.getGameProfile().getName() + " (not in combat)");
+            return;
+        }
 
-        EntityAttributeInstance healthAttr = player.getAttributes().getCustomInstance(EntityAttributes.GENERIC_MAX_HEALTH);
+        // Применение здоровья
+        EntityAttributeInstance healthAttr = player.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
         if (healthAttr != null) {
+            healthAttr.removeModifier(HEALTH_MODIFIER_UUID); // Очищаем старый модификатор
             healthAttr.addPersistentModifier(new EntityAttributeModifier(
+                    HEALTH_MODIFIER_UUID,
                     "character_health",
                     this.health - 20.0,
                     EntityAttributeModifier.Operation.ADDITION
             ));
         }
-        player.setHealth(this.health);
+        player.setHealth(player.getMaxHealth()); // Синхронизируем ХП
 
         // Применение урона
-        EntityAttributeInstance damageAttr = player.getAttributes().getCustomInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+        EntityAttributeInstance damageAttr = player.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         if (damageAttr != null) {
+            damageAttr.removeModifier(DAMAGE_MODIFIER_UUID); // Очищаем старый модификатор
             damageAttr.addPersistentModifier(new EntityAttributeModifier(
+                    DAMAGE_MODIFIER_UUID,
                     "character_damage",
                     this.damage / 10.0 - 1.0,
                     EntityAttributeModifier.Operation.ADDITION
@@ -76,6 +86,7 @@ public abstract class Character {
         // Применение бафов
         applyBuffs(player);
         data.setSkinId(this.skin, player);
+        System.out.println("Character: Applied attributes for " + player.getGameProfile().getName() + ", health: " + this.health + ", damage: " + this.damage);
     }
 
     protected abstract void applyBuffs(ServerPlayerEntity player);

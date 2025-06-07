@@ -1,4 +1,4 @@
-package rw.modden.character;
+package rw.modden.character.characters;
 
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -6,6 +6,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import rw.modden.weapon.TrainingBaton;
 import rw.modden.weapon.Weapon;
+import rw.modden.character.Character;
 
 public class Kllima777Character extends Character {
     public Kllima777Character() {

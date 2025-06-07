@@ -8,8 +8,10 @@ import rw.modden.Axorunelostworlds;
 import java.util.ArrayList;
 import java.util.List;
 
+import rw.modden.character.characters.*;
+
 public class CharacterInitializer {
-    private static final List<CharacterEntry> CHARACTERS = new ArrayList<CharacterEntry>();
+    private static final List<CharacterEntry> CHARACTERS = new ArrayList<>();
 
     public static void initialize() {
         System.out.println("CharacterInitializer: Initializing characters...");
@@ -18,6 +20,12 @@ public class CharacterInitializer {
                 "kllima777",
                 new Kllima777Character(),
                 new Identifier(Axorunelostworlds.MOD_ID, "skins/kllima777")
+        );
+
+        registerCharacter(
+                "firrice",
+                new FIRrICECharacter(),
+                new Identifier(Axorunelostworlds.MOD_ID, "skins/firrice")
         );
 
         // TODO: Добавить других персонажей
@@ -29,16 +37,13 @@ public class CharacterInitializer {
             System.out.println("CharacterInitializer: Player joined: " + playerName);
 
             // Загрузка сохранённых данных или создание нового персонажа
-            for (CharacterEntry entry:CHARACTERS) {
+            for (CharacterEntry entry : CHARACTERS) {
                 if (entry.playerName.equals(playerName)) {
                     PlayerData playerData = PlayerData.getOrCreate(player);
                     if (!playerData.hasCharacter(playerName)) {
                         playerData.getInventory().addCharacter(entry.character);
-                        if (!playerData.getCombatCharacters().contains(entry.character) && playerData.getCombatCharacters().size() < 3) {
-                            playerData.getCombatCharacters().add(entry.character);
-                        }
                         playerData.markDirty();
-                        System.out.println("CharacterInitializer: Added character for " + playerName + " (not applied yet)");
+                        System.out.println("CharacterInitializer: Added character to inventory for " + playerName + " (not applied)");
                     }
                     return;
                 }
