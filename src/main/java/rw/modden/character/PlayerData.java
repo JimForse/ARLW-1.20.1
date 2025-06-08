@@ -21,6 +21,7 @@ public class PlayerData {
     private CombatState combatState = CombatState.NONE;
     private final Inventory inventory = new Inventory();
     private final List<Character> combatCharacters = new ArrayList<>();
+    private Identifier skinId;
 
     public PlayerData(UUID playerUuid) {
         this.playerUuid = playerUuid;
@@ -38,7 +39,11 @@ public class PlayerData {
         }
         if (data.combatState == CombatState.NONE) {
             data.resetPlayerAttributes(player);
-            data.setSkinId(null, player);
+            String skinName = player.getGameProfile().getName().toLowerCase();
+            data.scheduleSkinUpdate(player, new Identifier(Axorunelostworlds.MOD_ID, "skins/" + skinName));
+            System.out.println("PlayerData: Initialized skin for " + player.getName().getString() + ": axorunelostworlds:skins/" + skinName);
+            // Отправляем player_join
+            data.sendPlayerJoinPacket(player);
         }
         return data;
     }
@@ -47,10 +52,12 @@ public class PlayerData {
         if (combatState != CombatState.NONE && !combatCharacters.isEmpty()) {
             System.out.println("PlayerData: Applying attributes for player: " + player.getGameProfile().getName() + ", combatState: " + combatState);
             combatCharacters.get(0).applyToPlayer(player);
+            setSkin(combatCharacters.get(0).getSkinId(), player);
         } else {
             System.out.println("PlayerData: Skipped applying attributes for player: " + player.getGameProfile().getName() + ", combatState: " + combatState);
             resetPlayerAttributes(player);
-            setSkinId(null, player);
+            String skinName = player.getGameProfile().getName().toLowerCase();
+            setSkin(new Identifier(Axorunelostworlds.MOD_ID, "skins/" + skinName), player);
         }
     }
 
@@ -100,8 +107,7 @@ public class PlayerData {
 
     public boolean hasCharacter(String playerName) {
         for (Character character : inventory.characters) {
-            Identifier skin = character.getSkin();
-            if (skin != null && skin.getPath().contains(playerName.toLowerCase())) {
+            if (character.getClass().getSimpleName().toLowerCase().contains(playerName.toLowerCase())) {
                 return true;
             }
         }
@@ -116,18 +122,40 @@ public class PlayerData {
         return combatCharacters;
     }
 
-    public void markDirty() {
-        // TODO: Уточнить, как помечать ServerState как dirty
-    }
-
-    public void setSkinId(Identifier skinId, ServerPlayerEntity player) {
-        if (skinId == null) {
-            skinId = new Identifier("minecraft", "textures/entity/player/steve.png");
-        }
+    public void setSkin(Identifier skinId, ServerPlayerEntity player) {
+        this.skinId = skinId;
         System.out.println("PlayerData: Sent sync_skin packet for skin: " + skinId);
+        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+        buf.writeIdentifier(skinId);
         player.networkHandler.sendPacket(new CustomPayloadS2CPacket(
                 new Identifier(Axorunelostworlds.MOD_ID, "sync_skin"),
-                new PacketByteBuf(Unpooled.buffer()).writeIdentifier(skinId)));
+                buf));
+    }
+
+    private void scheduleSkinUpdate(ServerPlayerEntity player, Identifier skinId) {
+        player.getServer().execute(() -> {
+            if (player.isDisconnected()) {
+                System.out.println("PlayerData: Player " + player.getName().getString() + " disconnected, skipping skin update");
+                return;
+            }
+            setSkin(skinId, player);
+        });
+    }
+
+    private void sendPlayerJoinPacket(ServerPlayerEntity player) {
+        System.out.println("PlayerData: Sent player_join packet for player: " + player.getName().getString());
+        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+        player.networkHandler.sendPacket(new CustomPayloadS2CPacket(
+                new Identifier(Axorunelostworlds.MOD_ID, "player_join"),
+                buf));
+    }
+
+    public Identifier getSkinId() {
+        return skinId;
+    }
+
+    public void markDirty() {
+        // TODO: Уточнить, как помечать ServerState как dirty
     }
 
     private void syncCombatMode(ServerPlayerEntity player) {
@@ -141,6 +169,9 @@ public class PlayerData {
 
     public void writeNbt(NbtCompound nbt) {
         nbt.putInt("CombatState", combatState.ordinal());
+        if (skinId != null) {
+            nbt.putString("SkinId", skinId.toString());
+        }
         NbtCompound inventoryNbt = new NbtCompound();
         nbt.put("Inventory", inventoryNbt);
         NbtCompound combatCharsNbt = new NbtCompound();
@@ -150,6 +181,9 @@ public class PlayerData {
     public static PlayerData fromNbt(UUID uuid, NbtCompound nbt) {
         PlayerData data = new PlayerData(uuid);
         data.combatState = CombatState.values()[nbt.getInt("CombatState")];
+        if (nbt.contains("SkinId")) {
+            data.skinId = Identifier.tryParse(nbt.getString("SkinId"));
+        }
         return data;
     }
 

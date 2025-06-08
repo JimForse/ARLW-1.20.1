@@ -18,14 +18,11 @@ public class CharacterInitializer {
 
         registerCharacter(
                 "kllima777",
-                new Kllima777Character(),
-                new Identifier(Axorunelostworlds.MOD_ID, "skins/kllima777")
+                new Kllima777Character()
         );
-
         registerCharacter(
                 "firrice",
-                new FIRrICECharacter(),
-                new Identifier(Axorunelostworlds.MOD_ID, "skins/firrice")
+                new FIRrICECharacter()
         );
 
         // TODO: Добавить других персонажей
@@ -52,10 +49,8 @@ public class CharacterInitializer {
         });
     }
 
-    private static void registerCharacter(String playerName, Character character, Identifier skinId) {
-        CHARACTERS.add(new CharacterEntry(playerName.toLowerCase(), character, skinId));
-        System.out.println("CharacterInitializer: Registered character for player: " + playerName +
-                ", skin: " + skinId);
+    private static void registerCharacter(String playerName, Character character) {
+        CHARACTERS.add(new CharacterEntry(playerName.toLowerCase(), character));
     }
 
     public static Character getCharacter(String playerName) {
@@ -67,24 +62,12 @@ public class CharacterInitializer {
         return null;
     }
 
-    public static Identifier getSkin(String playerName) {
-        for (CharacterEntry entry : CHARACTERS) {
-            if (entry.playerName.equals(playerName.toLowerCase())) {
-                return entry.skinId;
-            }
-        }
-        return null;
-    }
-
     private static class CharacterEntry {
-        final String playerName;
-        final Character character;
-        final Identifier skinId;
-
-        CharacterEntry(String playerName, Character character, Identifier skinId) {
+        public final String playerName;
+        public final Character character;
+        CharacterEntry(String playerName, Character character) {
             this.playerName = playerName;
             this.character = character;
-            this.skinId = skinId;
         }
     }
 }

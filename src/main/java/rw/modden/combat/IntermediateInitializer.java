@@ -6,6 +6,8 @@ public class IntermediateInitializer {
     public static void initialize() {
         System.out.println("IntermediateInitializer: Initializing mechanics...");
         CharacterInitializer.initialize();
+        ServerCombatMechanics.initialize();
+        CombatMechanics.initialize();
         // TODO: Добавить StunMechanic
     }
 }

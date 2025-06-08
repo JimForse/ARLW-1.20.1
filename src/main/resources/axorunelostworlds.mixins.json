@@ -4,8 +4,10 @@
 	"package": "rw.modden.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
-		"ExampleMixin",
-		"SkinMixin"
+		"ExampleMixin"
+	],
+	"client": [
+		"PlayerSkinMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

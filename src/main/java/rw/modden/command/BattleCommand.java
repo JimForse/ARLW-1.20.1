@@ -1,4 +1,4 @@
-package rw.modden.combat;
+package rw.modden.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -7,6 +7,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import rw.modden.character.Character;
 import rw.modden.character.CharacterInitializer;
 import rw.modden.character.PlayerData;
+import rw.modden.combat.CombatState;
 
 import static net.minecraft.server.command.CommandManager.literal;
 
@@ -19,6 +20,7 @@ public class BattleCommand {
 
     private static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(literal("battle")
+                .requires(source -> source.hasPermissionLevel(2)) // Только для операторов
                 .then(literal("start").executes(context -> {
                     ServerPlayerEntity player = context.getSource().getPlayer();
                     PlayerData data = PlayerData.getOrCreate(player);

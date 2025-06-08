@@ -5,6 +5,7 @@ import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import rw.modden.Axorunelostworlds;
 import rw.modden.weapon.Weapon;
 
 import java.util.UUID;
@@ -35,7 +36,8 @@ public abstract class Character {
     protected int damage;
     protected float stunModifier;
     protected final String[] buffs;
-    protected final Identifier skin;
+    protected final String playerName;
+    protected final Identifier skinId;
 
     public Character(CharacterType type, int starLevel, String[] buffs, String playerName) {
         this.type = type;
@@ -44,7 +46,8 @@ public abstract class Character {
         this.damage = (int) (type.baseDamage * (1 + starLevel * 0.2f));
         this.stunModifier = type.stunModifier * (1 + starLevel * 0.1f);
         this.buffs = buffs != null ? buffs : new String[0];
-        this.skin = CharacterInitializer.getSkin(playerName);
+        this.playerName = playerName;
+        this.skinId = new Identifier(Axorunelostworlds.MOD_ID, "skins/" + playerName);
     }
 
     private static int clamp(int value, int min, int max) {
@@ -85,7 +88,6 @@ public abstract class Character {
 
         // Применение бафов
         applyBuffs(player);
-        data.setSkinId(this.skin, player);
         System.out.println("Character: Applied attributes for " + player.getGameProfile().getName() + ", health: " + this.health + ", damage: " + this.damage);
     }
 
@@ -117,8 +119,8 @@ public abstract class Character {
         return buffs;
     }
 
-    public Identifier getSkin() {
-        return skin;
+    public Identifier getSkinId() {
+        return skinId;
     }
 
     protected boolean containsBuff(String buff) {
