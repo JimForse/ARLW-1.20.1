@@ -21,35 +21,33 @@ public class SkinCommand {
             dispatcher.register(
                     CommandManager.literal("skin")
                             .then(CommandManager.literal("set")
-                                .then(CommandManager.argument("playerName", net.minecraft.command.argument.EntityArgumentType.player())
-                                        .executes(context -> {
-                                            ServerCommandSource source = context.getSource();
-                                            ServerPlayerEntity targetPlayer = net.minecraft.command.argument.EntityArgumentType.getPlayer(context, "playerName");
-                                            String playerName = targetPlayer.getGameProfile().getName().toLowerCase();
+                                    .then(CommandManager.argument("player", net.minecraft.command.argument.EntityArgumentType.player())
+                                            .executes(context -> {
+                                                ServerCommandSource source = context.getSource();
+                                                ServerPlayerEntity targetPlayer = net.minecraft.command.argument.EntityArgumentType.getPlayer(context, "player");
+                                                String playerName = targetPlayer.getGameProfile().getName().toLowerCase();
 
-                                            // Проверяем файл в .minecraft/skins/
-                                            Path skinPath = Paths.get(".minecraft", "skins", playerName + ".png");
-                                            File skinFile = skinPath.toFile();
-                                            Identifier skinId;
+                                                // Проверяем файл в .minecraft/skins/
+                                                Path skinPath = Paths.get(".minecraft", "skins", playerName + ".png");
+                                                File skinFile = skinPath.toFile();
+                                                Identifier skinId;
 
-                                            if (skinFile.exists() && skinFile.isFile()) {
-                                                // Скин найден в .minecraft/skins/
-                                                skinId = new Identifier(Axorunelostworlds.MOD_ID, "skins/" + playerName);
-                                                System.out.println("SkinCommand: Found skin file at " + skinPath + ", registering as " + skinId);
-                                                registerServerSkin(skinFile, skinId);
-                                            } else {
-                                                // Проверяем ресурсы мода
-                                                skinId = new Identifier(Axorunelostworlds.MOD_ID, "skins/" + playerName);
-                                                System.out.println("SkinCommand: No file at " + skinPath + ", using mod resource " + skinId);
-                                            }
+                                                if (skinFile.exists() && skinFile.isFile()) {
+                                                    skinId = new Identifier(Axorunelostworlds.MOD_ID, "skins/" + playerName + ".png");
+                                                    System.out.println("SkinCommand: Found skin file at " + skinPath + ", registering as " + skinId);
+                                                    registerServerSkin(skinFile, skinId);
+                                                } else {
+                                                    skinId = new Identifier(Axorunelostworlds.MOD_ID, "skins/" + playerName + ".png");
+                                                    System.out.println("SkinCommand: No file at " + skinPath + ", using mod resource " + skinId);
+                                                }
 
-                                            // Применяем скин
-                                            PlayerData playerData = PlayerData.getOrCreate(targetPlayer);
-                                            playerData.setSkin(skinId, targetPlayer);
-                                            source.sendFeedback(() -> Text.literal("Set skin for " + playerName + " to " + skinId), true);
-                                            return 1;
-                                        })
-                                )
+                                                // Применяем скин
+                                                PlayerData playerData = PlayerData.getOrCreate(targetPlayer);
+                                                playerData.setSkin(skinId, targetPlayer);
+                                                source.sendFeedback(() -> Text.literal("Set skin for " + playerName + " to " + skinId), true);
+                                                return 1;
+                                            })
+                                    )
                             )
             );
         });

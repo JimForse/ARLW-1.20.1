@@ -40,9 +40,8 @@ public class PlayerData {
         if (data.combatState == CombatState.NONE) {
             data.resetPlayerAttributes(player);
             String skinName = player.getGameProfile().getName().toLowerCase();
-            data.scheduleSkinUpdate(player, new Identifier(Axorunelostworlds.MOD_ID, "skins/" + skinName));
-            System.out.println("PlayerData: Initialized skin for " + player.getName().getString() + ": axorunelostworlds:skins/" + skinName);
-            // Отправляем player_join
+            data.scheduleSkinUpdate(player, new Identifier(Axorunelostworlds.MOD_ID, "skins/" + skinName + ".png"));
+            System.out.println("PlayerData: Initialized skin for " + player.getName().getString() + ": axorunelostworlds:skins/" + skinName + ".png");
             data.sendPlayerJoinPacket(player);
         }
         return data;
@@ -57,7 +56,7 @@ public class PlayerData {
             System.out.println("PlayerData: Skipped applying attributes for player: " + player.getGameProfile().getName() + ", combatState: " + combatState);
             resetPlayerAttributes(player);
             String skinName = player.getGameProfile().getName().toLowerCase();
-            setSkin(new Identifier(Axorunelostworlds.MOD_ID, "skins/" + skinName), player);
+            setSkin(new Identifier(Axorunelostworlds.MOD_ID, "skins/" + skinName + ".png"), player);
         }
     }
 
@@ -138,7 +137,8 @@ public class PlayerData {
                 System.out.println("PlayerData: Player " + player.getName().getString() + " disconnected, skipping skin update");
                 return;
             }
-            setSkin(skinId, player);
+            // Задержка для уверенности, что игрок полностью инициализирован
+            player.getServer().execute(() -> setSkin(skinId, player));
         });
     }
 

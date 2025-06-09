@@ -4,7 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.texture.PlayerSkinTexture;
+import net.minecraft.client.texture.ResourceTexture;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.util.Identifier;
 import rw.modden.Axorunelostworlds;
@@ -17,7 +17,7 @@ import java.util.UUID;
 public class ClientNetworking implements ClientModInitializer {
     private static final Map<UUID, Identifier> playerSkins = new HashMap<>();
     private static CombatState combatState = CombatState.NONE;
-    private static Identifier pendingSkinId = null; // Кэш для скина, если игрок ещё не инициализирован
+    private static Identifier pendingSkinId = null;
 
     @Override
     public void onInitializeClient() {
@@ -42,12 +42,11 @@ public class ClientNetworking implements ClientModInitializer {
                             applySkin(client.player, skinId);
                         } else {
                             System.out.println("ClientNetworking: Player is null, caching skin: " + skinId);
-                            pendingSkinId = skinId; // Кэшируем скин
+                            pendingSkinId = skinId;
                         }
                     });
                 });
 
-        // Проверка отложенного скина при входе игрока
         ClientPlayNetworking.registerGlobalReceiver(
                 new Identifier(Axorunelostworlds.MOD_ID, "player_join"),
                 (client, handler, buf, responseSender) -> {
@@ -57,7 +56,7 @@ public class ClientNetworking implements ClientModInitializer {
                             playerSkins.put(playerUuid, pendingSkinId);
                             applySkin(client.player, pendingSkinId);
                             System.out.println("ClientNetworking: Applied cached skin: " + pendingSkinId);
-                            pendingSkinId = null; // Очищаем кэш
+                            pendingSkinId = null;
                         }
                     });
                 });
@@ -66,15 +65,20 @@ public class ClientNetworking implements ClientModInitializer {
     private static void applySkin(AbstractClientPlayerEntity player, Identifier skinId) {
         MinecraftClient client = MinecraftClient.getInstance();
         TextureManager textureManager = client.getTextureManager();
-        // Регистрация текстуры
-        textureManager.registerTexture(skinId, new PlayerSkinTexture(null, skinId.toString(), null, false, null));
-        // Форсирование перерисовки мира для "резкого" эффекта
-        client.worldRenderer.reload();
-        System.out.println("ClientNetworking: Applied skin " + skinId + " for player " + player.getName().getString());
+
+        // Извлекаем имя скина
+        String skinName = skinId.getPath().replace("skins/", "").replace(".png", "");
+        Identifier textureId = new Identifier(skinId.getNamespace(), "skins/" + skinName);
+
+        // Регистрируем текстуру из ресурсов мода
+        ResourceTexture skinTexture = new ResourceTexture(textureId);
+        textureManager.registerTexture(textureId, skinTexture);
+
+        System.out.println("ClientNetworking: Applied skin " + textureId + " for player " + player.getName().getString());
     }
 
     public static Identifier getPlayerSkin(UUID uuid) {
-        return playerSkins.getOrDefault(uuid, new Identifier("minecraft", "textures/entity/player/steve.png"));
+        return playerSkins.getOrDefault(uuid, new Identifier("minecraft", "textures/entity/steve.png"));
     }
 
     public static CombatState getCombatState() {

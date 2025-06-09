@@ -7,7 +7,7 @@
 		"ExampleMixin"
 	],
 	"client": [
-		"PlayerSkinMixin"
+		"AbstractClientPlayerEntityMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
