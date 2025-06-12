@@ -19,4 +19,15 @@ public class AbstractClientPlayerEntityMixin {
             cir.cancel();
         }
     }
+
+    @Inject(method = "getModel", at = @At("RETURN"), cancellable = true)
+    private void injectGetModel(CallbackInfoReturnable<String> cir) {
+        AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
+        Identifier modelId = ClientNetworking.getPlayerModel(player.getUuid());
+        if (modelId != null && modelId.equals(new Identifier("minecraft", "entity/player/wide"))) {
+            cir.setReturnValue("default"); // Steve
+        } else {
+            cir.setReturnValue("slim"); // Эксклюзивная модель или Alex
+        }
+    }
 }

@@ -55,3 +55,11 @@ publishing {
 		// Add publishing repos if needed
 	}
 }
+
+sourceSets {
+	main {
+		resources {
+			srcDirs = ['src/main/resources']
+		}
+	}
+}

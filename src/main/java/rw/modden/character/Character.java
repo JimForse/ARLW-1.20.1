@@ -36,18 +36,20 @@ public abstract class Character {
     protected int damage;
     protected float stunModifier;
     protected final String[] buffs;
-    protected final String playerName;
+    protected final String characterName;
     protected final Identifier skinId;
+    protected Identifier modelId;
 
-    public Character(CharacterType type, int starLevel, String[] buffs, String playerName) {
+    public Character(CharacterType type, int starLevel, String[] buffs, String characterName) {
         this.type = type;
         this.starLevel = clamp(starLevel, 0, 5);
         this.health = type.maxHealth * (1 + starLevel * 0.2f);
         this.damage = (int) (type.baseDamage * (1 + starLevel * 0.2f));
         this.stunModifier = type.stunModifier * (1 + starLevel * 0.1f);
         this.buffs = buffs != null ? buffs : new String[0];
-        this.playerName = playerName;
-        this.skinId = new Identifier(Axorunelostworlds.MOD_ID, "skins/" + playerName);
+        this.characterName = characterName;
+        this.skinId = new Identifier(Axorunelostworlds.MOD_ID, "skins/" + characterName.toLowerCase() + ".png");
+        this.modelId = null; // По умолчанию null, чтобы использовать default модель
     }
 
     private static int clamp(int value, int min, int max) {
@@ -61,10 +63,9 @@ public abstract class Character {
             return;
         }
 
-        // Применение здоровья
         EntityAttributeInstance healthAttr = player.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
         if (healthAttr != null) {
-            healthAttr.removeModifier(HEALTH_MODIFIER_UUID); // Очищаем старый модификатор
+            healthAttr.removeModifier(HEALTH_MODIFIER_UUID);
             healthAttr.addPersistentModifier(new EntityAttributeModifier(
                     HEALTH_MODIFIER_UUID,
                     "character_health",
@@ -72,12 +73,11 @@ public abstract class Character {
                     EntityAttributeModifier.Operation.ADDITION
             ));
         }
-        player.setHealth(player.getMaxHealth()); // Синхронизируем ХП
+        player.setHealth(player.getMaxHealth());
 
-        // Применение урона
         EntityAttributeInstance damageAttr = player.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         if (damageAttr != null) {
-            damageAttr.removeModifier(DAMAGE_MODIFIER_UUID); // Очищаем старый модификатор
+            damageAttr.removeModifier(DAMAGE_MODIFIER_UUID);
             damageAttr.addPersistentModifier(new EntityAttributeModifier(
                     DAMAGE_MODIFIER_UUID,
                     "character_damage",
@@ -86,7 +86,6 @@ public abstract class Character {
             ));
         }
 
-        // Применение бафов
         applyBuffs(player);
         System.out.println("Character: Applied attributes for " + player.getGameProfile().getName() + ", health: " + this.health + ", damage: " + this.damage);
     }
@@ -121,6 +120,10 @@ public abstract class Character {
 
     public Identifier getSkinId() {
         return skinId;
+    }
+
+    public Identifier getModelId() {
+        return modelId != null ? modelId : new Identifier("minecraft", "entity/player/wide");
     }
 
     protected boolean containsBuff(String buff) {

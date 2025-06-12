@@ -6,7 +6,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import rw.modden.character.Character;
 import rw.modden.weapon.TrainingBaton;
 import rw.modden.weapon.Weapon;
-import rw.modden.character.Character;
 
 public class FIRrICECharacter extends Character {
     public FIRrICECharacter() {
@@ -25,7 +24,13 @@ public class FIRrICECharacter extends Character {
             ));
         }
         if (containsBuff("critical_hit")) {
-            // TODO: Реализовать критический удар
+            player.addStatusEffect(new StatusEffectInstance(
+                    StatusEffects.STRENGTH,
+                    Integer.MAX_VALUE,
+                    1,
+                    false,
+                    false
+            ));
             System.out.println("FIRrICECharacter: Critical hit buff not implemented");
         }
         System.out.println("FIRrICECharacter: Buffs applied to player: " + player.getGameProfile().getName());

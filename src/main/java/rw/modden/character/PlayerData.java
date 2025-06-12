@@ -22,6 +22,7 @@ public class PlayerData {
     private final Inventory inventory = new Inventory();
     private final List<Character> combatCharacters = new ArrayList<>();
     private Identifier skinId;
+    private Identifier modelId;
 
     public PlayerData(UUID playerUuid) {
         this.playerUuid = playerUuid;
@@ -123,12 +124,13 @@ public class PlayerData {
 
     public void setSkin(Identifier skinId, ServerPlayerEntity player) {
         this.skinId = skinId;
-        System.out.println("PlayerData: Sent sync_skin packet for skin: " + skinId);
+        System.out.println("PlayerData: Setting skin: " + skinId + " for player: " + player.getGameProfile().getName());
         PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
         buf.writeIdentifier(skinId);
         player.networkHandler.sendPacket(new CustomPayloadS2CPacket(
                 new Identifier(Axorunelostworlds.MOD_ID, "sync_skin"),
                 buf));
+        System.out.println("PlayerData: Sent sync_skin packet for skin: " + skinId);
     }
 
     private void scheduleSkinUpdate(ServerPlayerEntity player, Identifier skinId) {
@@ -154,8 +156,28 @@ public class PlayerData {
         return skinId;
     }
 
+    public Identifier getModelId() {
+        return modelId;
+    }
+
     public void markDirty() {
         // TODO: Уточнить, как помечать ServerState как dirty
+    }
+
+    public void setActiveCharacter(Character character, ServerPlayerEntity player) {
+        combatCharacters.clear(); // Очищаем список, чтобы новый персонаж стал активным
+        combatCharacters.add(character);
+        System.out.println("PlayerData: Set active character for player: " + player.getGameProfile().getName());
+        applyToPlayer(player);
+    }
+
+    private void syncModel(ServerPlayerEntity player) {
+        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+        buf.writeIdentifier(modelId != null ? modelId : new Identifier("minecraft", "entity/player/wide"));
+        player.networkHandler.sendPacket(new CustomPayloadS2CPacket(
+                new Identifier(Axorunelostworlds.MOD_ID, "sync_model"),
+                buf));
+        System.out.println("PlayerData: Sent sync_model packet for model: " + modelId);
     }
 
     private void syncCombatMode(ServerPlayerEntity player) {

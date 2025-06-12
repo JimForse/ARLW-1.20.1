@@ -11,6 +11,7 @@ import rw.modden.character.Character;
 public class Kllima777Character extends Character {
     public Kllima777Character() {
         super(CharacterType.SUPPORT, 0, new String[]{"speed_boost", "critical_hit"}, "kllima777");
+        this.modelId = new Identifier("minecraft", "entity/player/wide");
         // TODO: Доработать бафы
         // TODO: Добавить пассивные способности
         // TODO: Уточнить статы
@@ -28,7 +29,13 @@ public class Kllima777Character extends Character {
             ));
         }
         if (containsBuff("critical_hit")) {
-            // TODO: Реализовать критический удар
+            player.addStatusEffect(new StatusEffectInstance(
+                    StatusEffects.STRENGTH,
+                    Integer.MAX_VALUE,
+                    1,
+                    false,
+                    false
+            ));
             System.out.println("Kllima777Character: Critical hit buff not implemented");
         }
         System.out.println("Kllima777Character: Buffs applied to player: " + player.getGameProfile().getName());
