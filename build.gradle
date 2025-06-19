@@ -3,14 +3,20 @@ plugins {
 	id 'maven-publish'
 }
 
-version = project.mod_version
-group = project.maven_group
+version = "${project.mod_version}"
+group = "${project.maven_group}"
 
 base {
-	archivesName = project.archives_base_name
+	archivesName = "${project.archives_base_name}"
 }
 
 repositories {
+	maven { url = 'https://maven.fabricmc.net/' }
+	maven { url = 'https://masa.dy.fi/mcmods/maven/' }
+	maven { url = 'https://api.modrinth.com/maven/' }
+
+	maven { url = 'https://jitpack.io' }
+	maven { url = 'https://repo1.maven.org/maven2/' }
 	// Add repositories if needed
 }
 
@@ -19,14 +25,21 @@ dependencies {
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+	modImplementation "org.luaj:luaj-jse:3.0.1"
+	modImplementation "com.neovisionaries:nv-websocket-client:2.14"
+
+	modImplementation files('libs/litematica-fabric-1.20.1-0.15.4.jar')
+	modImplementation files('libs/malilib-fabric-1.20.1-0.16.3.jar')
+	modImplementation "maven.modrinth:figura:0.1.5+1.20.1"
 }
 
 processResources {
-	inputs.property "version", project.version
-	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
+	eachFile { details ->
+		println "Копируется: ${details.path}"
 	}
 }
+
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = 17
@@ -40,13 +53,13 @@ java {
 
 jar {
 	from("LICENSE") {
-		rename { "${it}_${project.base.archivesName}" }
+		rename("LICENSE", "LICENSE_${project.base.archivesName}")
 	}
 }
 
 publishing {
 	publications {
-		create("mavenJava", MavenPublication) {
+		mavenJava(MavenPublication) {
 			artifactId = project.archives_base_name
 			from components.java
 		}
@@ -63,3 +76,12 @@ sourceSets {
 		}
 	}
 }
+
+task copyAssets(type: Copy) {
+	from 'src/main/resources/assets'
+	into 'run/assets'
+	eachFile { details ->
+		println "Копируется в run/assets: ${details.path}"
+	}
+}
+runClient.dependsOn copyAssets

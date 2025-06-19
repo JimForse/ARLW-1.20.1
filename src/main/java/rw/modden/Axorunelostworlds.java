@@ -20,3 +20,7 @@ public class Axorunelostworlds implements ModInitializer {
 		// ModDimensions.register();
 	}
 }
+/*
+ На дворе лето. Я в чужой стране. И тут эта тварь!
+ Я просто хотел жить...
+ */

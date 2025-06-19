@@ -27,6 +27,8 @@ public class SkinCommand {
     private static final SuggestionProvider<ServerCommandSource> CHARACTER_SUGGESTIONS = (context, builder) -> {
         builder.suggest("kllima777");
         builder.suggest("firrice");
+        builder.suggest("stalker_anomaly");
+        builder.suggest("spectorprofm");
         return builder.buildFuture();
     };
 
@@ -52,13 +54,13 @@ public class SkinCommand {
                                                         }
 
                                                         PlayerData playerData = PlayerData.getOrCreate(targetPlayer);
-                                                        Identifier skinId = character.getSkinId();
-                                                        playerData.setSkin(skinId, targetPlayer);
+                                                        String modelPath = "axorunelostworlds:models/" + characterName + "/model.bbmodel";
+                                                        playerData.setModel(modelPath, targetPlayer);
                                                         source.sendFeedback(
                                                                 () -> Text.literal("Установлен скин персонажа " + characterName + " для игрока " + targetPlayer.getGameProfile().getName()),
                                                                 true
                                                         );
-                                                        System.out.println("SkinCommand: Applied skin " + skinId + " for player " + targetPlayer.getGameProfile().getName());
+                                                        System.out.println("SkinCommand: Applied model " + modelPath + " for player " + targetPlayer.getGameProfile().getName());
                                                         return 1;
                                                     })
                                             )

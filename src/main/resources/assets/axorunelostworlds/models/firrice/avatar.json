@@ -1,0 +1,8 @@
+{
+  "name": "firrice",
+  "description": "",
+  "authors": ["TPS"],
+  "model": "axorunelostworlds:models/firrice/model.bbmodel",
+  "scripts": ["script.lua"],
+  "color": "#27aae0"
+}

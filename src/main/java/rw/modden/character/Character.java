@@ -6,6 +6,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import rw.modden.Axorunelostworlds;
+import rw.modden.combat.path.PathType;
 import rw.modden.weapon.Weapon;
 
 import java.util.UUID;
@@ -37,10 +38,10 @@ public abstract class Character {
     protected float stunModifier;
     protected final String[] buffs;
     protected final String characterName;
-    protected final Identifier skinId;
-    protected Identifier modelId;
+    protected String modelPath;
+    protected PathType pathType;
 
-    public Character(CharacterType type, int starLevel, String[] buffs, String characterName) {
+    public Character(CharacterType type, int starLevel, String[] buffs, String characterName, PathType pathType) {
         this.type = type;
         this.starLevel = clamp(starLevel, 0, 5);
         this.health = type.maxHealth * (1 + starLevel * 0.2f);
@@ -48,8 +49,8 @@ public abstract class Character {
         this.stunModifier = type.stunModifier * (1 + starLevel * 0.1f);
         this.buffs = buffs != null ? buffs : new String[0];
         this.characterName = characterName;
-        this.skinId = new Identifier(Axorunelostworlds.MOD_ID, "skins/" + characterName.toLowerCase() + ".png");
-        this.modelId = null; // По умолчанию null, чтобы использовать default модель
+        this.modelPath = "axorunelostworlds/models/" + characterName.toLowerCase() + "/model.bbmodel";
+        this.pathType = pathType;
     }
 
     private static int clamp(int value, int min, int max) {
@@ -118,12 +119,8 @@ public abstract class Character {
         return buffs;
     }
 
-    public Identifier getSkinId() {
-        return skinId;
-    }
-
-    public Identifier getModelId() {
-        return modelId != null ? modelId : new Identifier("minecraft", "entity/player/wide");
+    public String getModelPath() {
+        return modelPath;
     }
 
     protected boolean containsBuff(String buff) {
@@ -131,5 +128,12 @@ public abstract class Character {
             if (b.equals(buff)) return true;
         }
         return false;
+    }
+
+    public void applyPathDefaults(PlayerData playerData) { // Задаёт начальные параметры пути
+    }
+
+    public PathType getPreferredPath() {
+        return this.pathType;
     }
 }

@@ -2,13 +2,12 @@ package rw.modden.character;
 
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
-import rw.modden.Axorunelostworlds;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import rw.modden.character.characters.*;
+import rw.modden.combat.CombatState;
 
 public class CharacterInitializer {
     private static final List<CharacterEntry> CHARACTERS = new ArrayList<>();
@@ -23,6 +22,14 @@ public class CharacterInitializer {
         registerCharacter(
                 "firrice",
                 new FIRrICECharacter()
+        );
+        registerCharacter(
+                "stalker_anomaly",
+                new Stalker_AnomalyCharacter()
+        );
+        registerCharacter(
+                "spectorprofm",
+                new SpectorprofmCharacter()
         );
 
         // TODO: Добавить других персонажей
@@ -39,7 +46,9 @@ public class CharacterInitializer {
                     PlayerData playerData = PlayerData.getOrCreate(player);
                     if (!playerData.hasCharacter(playerName)) {
                         playerData.getInventory().addCharacter(entry.character);
+                        playerData.setModel("axorunelostworlds:models/" + playerName + "/model.bbmodel", player);
                         playerData.markDirty();
+//                        playerData.setCombatMode(CombatState.NONE, player);
                         System.out.println("CharacterInitializer: Added character to inventory for " + playerName + " (not applied)");
                     }
                     return;

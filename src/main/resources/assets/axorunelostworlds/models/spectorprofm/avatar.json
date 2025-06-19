@@ -1,0 +1,8 @@
+{
+  "name": "spectorprofm",
+  "description": "",
+  "authors": ["TPS"],
+  "model": "axorunelostworlds:models/spectorprofm/model.bbmodel",
+  "scripts": ["script.lua"],
+  "color": "#00f0ff"
+}

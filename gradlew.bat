@@ -92,3 +92,6 @@ exit /b %EXIT_CODE%
 if "%OS%"=="Windows_NT" endlocal
 
 :omega
+
+@echo off
+java -jar "%~dp0\gradle\wrapper\gradle-wrapper.jar" %*

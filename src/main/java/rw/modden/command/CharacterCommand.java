@@ -1,6 +1,5 @@
 package rw.modden.command;
 
-import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -9,16 +8,17 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+
 import rw.modden.character.PlayerData;
 import rw.modden.character.Character;
-import rw.modden.character.characters.FIRrICECharacter;
-import rw.modden.character.characters.Kllima777Character;
+import rw.modden.character.characters.*;
 
 public class CharacterCommand {
     private static final SuggestionProvider<ServerCommandSource> CHARACTER_SUGGESTIONS = (context, builder) -> {
         builder.suggest("kllima777");
         builder.suggest("firrice");
+        builder.suggest("stalker_anomaly");
+        builder.suggest("spectorprofm");
         return builder.buildFuture();
     };
 
@@ -34,16 +34,24 @@ public class CharacterCommand {
                                                         ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "player");
                                                         String characterName = StringArgumentType.getString(context, "character").toLowerCase();
                                                         Character character = null;
-                                                        Identifier skinId = null;
+                                                        String modelPath = null;
 
                                                         switch (characterName) {
                                                             case "kllima777":
                                                                 character = new Kllima777Character();
-                                                                skinId = new Identifier("axorunelostworlds", "skins/kllima777.png");
+                                                                modelPath = "axorunelostworlds/models/kllima777/model.bbmodel";
                                                                 break;
                                                             case "firrice":
                                                                 character = new FIRrICECharacter();
-                                                                skinId = new Identifier("axorunelostworlds", "skins/firrice.png");
+                                                                modelPath = "axorunelostworlds/models/firrice/model.bbmodel";
+                                                                break;
+                                                            case "stalker_anomaly":
+                                                                character = new Stalker_AnomalyCharacter();
+                                                                modelPath = "axorunelostworlds/models/stalker_anomaly/model.bbmodel";
+                                                                break;
+                                                            case "spectorprofm":
+                                                                character = new SpectorprofmCharacter();
+                                                                modelPath = "axorunelostworlds/models/spectorprofm/model.bbmodel";
                                                                 break;
                                                             default:
                                                                 context.getSource().sendError(Text.literal("Unknown character: " + characterName));
@@ -52,11 +60,23 @@ public class CharacterCommand {
 
                                                         PlayerData data = PlayerData.getOrCreate(player);
                                                         data.setActiveCharacter(character, player);
-                                                        data.setSkin(skinId, player);
+                                                        data.setModel(modelPath, player);
                                                         context.getSource().sendMessage(Text.literal("Установлен персонаж " + characterName + " для игрока " + player.getGameProfile().getName()));
                                                         return 1;
                                                     })
                                             )
+                                    )
+                            )
+                            .then(CommandManager.literal("get")
+                                    .then(CommandManager.argument("player", EntityArgumentType.player())
+                                            .executes(context -> {
+                                                ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "player");
+                                                String characterName = PlayerData.getCharacterName();
+
+                                                context.getSource().sendMessage(Text.literal("Игрок " + player.getGameProfile().getName() + " использует персонажа " + characterName));
+
+                                                return 0;
+                                            })
                                     )
                             )
             );

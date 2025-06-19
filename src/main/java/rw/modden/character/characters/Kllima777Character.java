@@ -4,14 +4,16 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import rw.modden.character.PlayerData;
+import rw.modden.combat.path.PathType;
 import rw.modden.weapon.TrainingBaton;
 import rw.modden.weapon.Weapon;
 import rw.modden.character.Character;
 
 public class Kllima777Character extends Character {
     public Kllima777Character() {
-        super(CharacterType.SUPPORT, 0, new String[]{"speed_boost", "critical_hit"}, "kllima777");
-        this.modelId = new Identifier("minecraft", "entity/player/wide");
+        super(CharacterType.SUPPORT, 0, new String[]{"speed_boost", "critical_hit"}, "kllima777", PathType.CREATE);
+        this.modelPath = "minecraft:entity/player/wide";
         // TODO: Доработать бафы
         // TODO: Добавить пассивные способности
         // TODO: Уточнить статы
@@ -44,5 +46,17 @@ public class Kllima777Character extends Character {
     @Override
     public Weapon getStartingWeapon() {
         return new TrainingBaton();
+    }
+
+    @Override
+    public void applyPathDefaults(PlayerData playerData) {
+        super.applyPathDefaults(playerData);
+        playerData.hasPassiveGeneration.put(PathType.CREATE, true);
+        playerData.pathType = PathType.CREATE;
+    }
+
+    @Override
+    public PathType getPreferredPath() {
+        return PathType.CREATE;
     }
 }

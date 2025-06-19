@@ -14,7 +14,7 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 
 public class KeyInput implements ClientModInitializer {
     private static final KeyBinding attackKey = KeyBindingHelper.registerKeyBinding(
-            new KeyBinding("key.axorunelostworlds.attack", InputUtil.Type.KEYSYM, InputUtil.GLFW_KEY_R, "category.axorunelostworlds.combat"));
+            new KeyBinding("key.axorunelostworlds.attack", InputUtil.Type.MOUSE, 0, "category.axorunelostworlds.combat"));
     private static final KeyBinding dashKey = KeyBindingHelper.registerKeyBinding(
             new KeyBinding("key.axorunelostworlds.dash", InputUtil.Type.KEYSYM, InputUtil.GLFW_KEY_LEFT_SHIFT, "category.axorunelostworlds.combat"));
     private static final KeyBinding ultKey = KeyBindingHelper.registerKeyBinding(
@@ -23,8 +23,8 @@ public class KeyInput implements ClientModInitializer {
             new KeyBinding("key.axorunelostworlds.e", InputUtil.Type.KEYSYM, InputUtil.GLFW_KEY_E, "category.axorunelostworlds.combat"));
     private static final KeyBinding switchCharacterKey = KeyBindingHelper.registerKeyBinding(
             new KeyBinding("key.axorunelostworlds.switch_character", InputUtil.Type.KEYSYM, InputUtil.GLFW_KEY_SPACE, "category.axorunelostworlds.combat"));
-    private static final KeyBinding toggleBattleKey = KeyBindingHelper.registerKeyBinding(
-            new KeyBinding("key.axorunelostworlds.toggle_battle", InputUtil.Type.KEYSYM, InputUtil.GLFW_KEY_B, "category.axorunelostworlds.combat"));
+//    private static final KeyBinding toggleBattleKey = KeyBindingHelper.registerKeyBinding(
+//            new KeyBinding("key.axorunelostworlds.toggle_battle", InputUtil.Type.KEYSYM, InputUtil.GLFW_KEY_B, "category.axorunelostworlds.combat"));
 
     @Override
     public void onInitializeClient() {
@@ -37,22 +37,31 @@ public class KeyInput implements ClientModInitializer {
                     networkHandler.sendPacket(new CustomPayloadC2SPacket(
                             new Identifier(Axorunelostworlds.MOD_ID, "player_action"),
                             new PacketByteBuf(Unpooled.buffer()).writeString("attack")));
+                    System.out.println("Button \"attack\" was passed");
                 }
-                if (dashKey.wasPressed()) {
+                else if (dashKey.wasPressed()) {
                     networkHandler.sendPacket(new CustomPayloadC2SPacket(
                             new Identifier(Axorunelostworlds.MOD_ID, "player_action"),
                             new PacketByteBuf(Unpooled.buffer()).writeString("dash")));
+                    System.out.println("Button \"dash\" was passed");
                 }
-                if (ultKey.wasPressed()) {
+                else if (ultKey.wasPressed()) {
                     networkHandler.sendPacket(new CustomPayloadC2SPacket(
                             new Identifier(Axorunelostworlds.MOD_ID, "player_action"),
                             new PacketByteBuf(Unpooled.buffer()).writeString("ult")));
+                    System.out.println("Button \"ult\" (super attack) was passed");
                 }
-                if (eKey.wasPressed()) {
+                else if (eKey.wasPressed()) {
                     networkHandler.sendPacket(new CustomPayloadC2SPacket(
                             new Identifier(Axorunelostworlds.MOD_ID, "player_action"),
                             new PacketByteBuf(Unpooled.buffer()).writeString("e")));
+                    System.out.println("Button \"e\" (enhanced attack) was passed");
                 }
+            } else {
+                attackKey.setPressed(false);
+                dashKey.setPressed(false);
+                ultKey.setPressed(false);
+                eKey.setPressed(false);
             }
 
             if (ClientNetworking.getCombatState() == CombatState.NORMAL && switchCharacterKey.wasPressed()) {
@@ -60,12 +69,13 @@ public class KeyInput implements ClientModInitializer {
                         new Identifier(Axorunelostworlds.MOD_ID, "player_action"),
                         new PacketByteBuf(Unpooled.buffer()).writeString("switch_character")));
             }
+            else { switchCharacterKey.setPressed(false); }
 
-            if (toggleBattleKey.wasPressed()) {
-                networkHandler.sendPacket(new CustomPayloadC2SPacket(
-                        new Identifier(Axorunelostworlds.MOD_ID, "player_action"),
-                        new PacketByteBuf(Unpooled.buffer()).writeString("toggle_battle")));
-            }
+//            if (toggleBattleKey.wasPressed()) {
+//                networkHandler.sendPacket(new CustomPayloadC2SPacket(
+//                        new Identifier(Axorunelostworlds.MOD_ID, "player_action"),
+//                        new PacketByteBuf(Unpooled.buffer()).writeString("toggle_battle")));
+//            }
         });
     }
 }
