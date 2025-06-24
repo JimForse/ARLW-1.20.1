@@ -54,7 +54,7 @@ public class SkinCommand {
                                                         }
 
                                                         PlayerData playerData = PlayerData.getOrCreate(targetPlayer);
-                                                        String modelPath = "axorunelostworlds:models/" + characterName + "/model.bbmodel";
+                                                        String modelPath = "axorunelostworlds:models/" + characterName;
                                                         playerData.setModel(modelPath, targetPlayer);
                                                         source.sendFeedback(
                                                                 () -> Text.literal("Установлен скин персонажа " + characterName + " для игрока " + targetPlayer.getGameProfile().getName()),

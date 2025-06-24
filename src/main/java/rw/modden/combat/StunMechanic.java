@@ -30,7 +30,7 @@ public class StunMechanic {
     private static boolean isActive = false;
     public static final Identifier STUN_UPDATE_PACKET = new Identifier(Axorunelostworlds.MOD_ID, "stun_update");
 
-    public static void initialize() {
+    public void initialize() {
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
             if (world instanceof ServerWorld && entity instanceof LivingEntity livingEntity && CombatMechanics.isBattleActive()) {
                 applyStunMechanics(livingEntity);

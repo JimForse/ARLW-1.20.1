@@ -1,9 +1,10 @@
-package rw.modden.character;
+package rw.modden.server;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.World;
+import rw.modden.character.PlayerData;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -12,28 +12,35 @@ import rw.modden.Axorunelostworlds;
 import rw.modden.combat.CombatState;
 import io.netty.buffer.Unpooled;
 import rw.modden.combat.path.PathType;
+import rw.modden.server.ServerState;
 
 import java.util.*;
 
 public class PlayerData {
+
 /*
-     НИЧЕГО тут не трогай!
-     Я не для того страдал, чтобы после что-то сломалось!
+     В этом классе хранятся данные игрока
+     Постарайся ничего не сломать...
 */
 
+// ----------------------------------------== Private ==----------------------------------------------------------------
     private final UUID playerUuid;
     private CombatState combatState = CombatState.NONE;
     private final Inventory inventory = new Inventory();
     private final List<Character> combatCharacters = new ArrayList<>();
-    private static String modelPath;
-
+    private String modelPath;
+    private boolean dashStatus;
+    private boolean modelChanged = false;
+    private boolean modelInitialized = false;
+    private int dashCoolDown = 60;
+// -----------------------------------------== Public ==----------------------------------------------------------------
     public PathType pathType;
     public Map<PathType, Float> resources;
     public Map<PathType, Long> pathAccess;
     public Map<PathType, Boolean> hasPassiveGeneration;
     public boolean immunity;
     public boolean isBuilding;
-
+// ---------------------------------------------------------------------------------------------------------------------
 
     public PlayerData(UUID playerUuid) {
         this.playerUuid = playerUuid;
@@ -43,6 +50,92 @@ public class PlayerData {
         pathAccess = new HashMap<>();
         isBuilding = false;
     }
+
+// ----------------------------------------== Getters ==----------------------------------------------------------------
+
+    public Character getActiveCharacter() {
+        return combatCharacters.isEmpty() ? null : combatCharacters.get(0);
+    }
+    public String getModelPath() { return modelPath; }
+    public CombatState getCombatState() { return combatState; }
+    public Inventory getInventory() {
+        return inventory;
+    }
+    public List<Character> getCombatCharacters() {
+        return combatCharacters;
+    }
+    public String getCharacterName(ServerPlayerEntity player) {
+        Character activeCharacter = getActiveCharacter();
+        return activeCharacter != null ? activeCharacter.getCharacterName() : "None";
+    }
+    public boolean isCombatMode() {
+        return combatState != CombatState.NONE;
+    }
+    public int getDashCoolDown() {
+        return dashCoolDown;
+    }
+    public boolean isEventCombatMode() {
+        return combatState == CombatState.EVENT;
+    }
+    public boolean hasCharacter(String playerName) {
+        for (Character character: inventory.characters) {
+            if (character.getClass().getSimpleName().toLowerCase().contains(playerName.toLowerCase())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+// ----------------------------------------== Setters ==----------------------------------------------------------------
+
+    public void setModel(String modelPath, ServerPlayerEntity player) {
+        if (!Objects.equals(this.modelPath, modelPath)) {
+            this.modelPath = modelPath;
+            modelChanged = true;
+            System.out.println("setModel called from: " + Thread.currentThread().getStackTrace()[2]);
+            System.out.println("PlayerData: Elementary modelPath \"" + this.modelPath + "\" changes to: \"" + modelPath + "\"");
+            System.out.println("PlayerData: modelPath set to: " + modelPath);
+            System.out.println("PlayerData: Setting model: " + modelPath + " for player: " + player.getGameProfile().getName());
+        }
+        if (modelChanged) {
+            PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+            buf.writeString(modelPath != null ? modelPath : "");
+            player.networkHandler.sendPacket(new CustomPayloadS2CPacket(
+                    new Identifier(Axorunelostworlds.MOD_ID, "sync_model"),
+                    buf));
+            System.out.println("PlayerData: Sent sync_model packet for model: " + modelPath);
+            modelChanged = false;
+        }
+    }
+    public void setCombatMode(CombatState state, ServerPlayerEntity player) {
+        this.combatState = state;
+        syncCombatMode(player);
+        applyToPlayer(player);
+    }
+    public void setDashCoolDown(int i) {
+        dashCoolDown = i;
+    }
+    public void setActiveCharacter(Character character, ServerPlayerEntity player) {
+        combatCharacters.clear(); // Очищаем список, чтобы новый персонаж стал активным
+        combatCharacters.add(character);
+        System.out.println("PlayerData: Set active character for player: " + player.getGameProfile().getName());
+        applyToPlayer(player);
+    }
+    public void switchCharacter(int index, ServerPlayerEntity player) {
+        if (index >= 0 && index < combatCharacters.size()) {
+            Character selected = combatCharacters.remove(index);
+            combatCharacters.add(0, selected);
+            applyToPlayer(player);
+            System.out.println("PlayerData: Switched to character at index " + index + " for player: " + player.getGameProfile().getName());
+        } else {
+            System.out.println("PlayerData: Invalid character index " + index + " for player: " + player.getGameProfile().getName());
+        }
+    }
+    public void setDashStatus(boolean b) {
+        dashStatus = b;
+    }
+
+// ----------------------------------------------------------------------------------------------------------------------
 
     public static PlayerData getOrCreate(ServerPlayerEntity player) {
         MinecraftServer server = player.getServer();
@@ -54,12 +147,13 @@ public class PlayerData {
             data = new PlayerData(player.getUuid());
             state.setPlayerData(player.getUuid(), data);
         }
-        if (data.combatState == CombatState.NONE) {
+        if (data.combatState == CombatState.NONE && !data.modelInitialized) {
             data.resetPlayerAttributes(player);
             String skinName = player.getGameProfile().getName().toLowerCase();
-            data.scheduleSkinUpdate(player, "axorunelostworlds:models/" + skinName + "/model.bbmodel");
-            System.out.println("PlayerData: Initialized model for " + player.getName().getString() + ": axorunelostworlds:models/" + skinName + "/model.bbmodel");
+            data.scheduleSkinUpdate(player, "axorunelostworlds:models/" + skinName);
+            System.out.println("PlayerData: Initialized model for " + player.getName().getString() + ": axorunelostworlds:models/" + skinName);
             data.sendPlayerJoinPacket(player);
+            data.modelInitialized = true;
         }
         return data;
     }
@@ -72,7 +166,6 @@ public class PlayerData {
         } else {
             System.out.println("PlayerData: Skipped applying attributes for player: " + player.getGameProfile().getName() + ", combatState: " + combatState);
             resetPlayerAttributes(player);
-            // String skinName = player.getGameProfile().getName().toLowerCase();
         }
     }
 
@@ -89,74 +182,6 @@ public class PlayerData {
         }
         player.setHealth(player.getMaxHealth());
         System.out.println("PlayerData: Resetting attributes for player: " + player.getGameProfile().getName() + ", combatState: " + combatState);
-    }
-
-    public boolean isCombatMode() {
-        return combatState != CombatState.NONE;
-    }
-
-    public boolean isEventCombatMode() {
-        return combatState == CombatState.EVENT;
-    }
-
-    public void setCombatMode(CombatState state, ServerPlayerEntity player) {
-        this.combatState = state;
-        syncCombatMode(player);
-        applyToPlayer(player);
-    }
-
-    public Character getActiveCharacter() {
-        return combatCharacters.isEmpty() ? null : combatCharacters.get(0);
-    }
-
-    public static String getModelPath() { return modelPath; }
-    public static String getCharacterName() {
-        String characterName = getModelPath().replace("axorunelostworlds/models/","");
-        characterName = characterName.replace("axorunelostworlds:models/","");
-        characterName = characterName.replace("/model.bbmodel","");
-        return characterName;
-    }
-
-    public void switchCharacter(int index, ServerPlayerEntity player) {
-        if (index >= 0 && index < combatCharacters.size()) {
-            Character selected = combatCharacters.remove(index);
-            combatCharacters.add(0, selected);
-            applyToPlayer(player);
-            System.out.println("PlayerData: Switched to character at index " + index + " for player: " + player.getGameProfile().getName());
-        } else {
-            System.out.println("PlayerData: Invalid character index " + index + " for player: " + player.getGameProfile().getName());
-        }
-    }
-
-    public boolean hasCharacter(String playerName) {
-        for (Character character : inventory.characters) {
-            if (character.getClass().getSimpleName().toLowerCase().contains(playerName.toLowerCase())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public Inventory getInventory() {
-        return inventory;
-    }
-
-    public List<Character> getCombatCharacters() {
-        return combatCharacters;
-    }
-
-    public void setModel(String modelPath, ServerPlayerEntity player) {
-        System.out.println("setModel called from: " + Thread.currentThread().getStackTrace()[2]);
-
-        System.out.println("PlayerData: Elementary modelPath \""+this.modelPath+"\" changes to: \""+modelPath+"\"");
-        this.modelPath = modelPath;
-        System.out.println("PlayerData: Setting model: " + modelPath + " for player: " + player.getGameProfile().getName());
-        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
-        buf.writeString(modelPath != null ? modelPath : "");
-        player.networkHandler.sendPacket(new CustomPayloadS2CPacket(
-                new Identifier(Axorunelostworlds.MOD_ID, "sync_model"),
-                buf));
-        System.out.println("PlayerData: Sent sync_model packet for model: " + modelPath);
     }
 
     private void scheduleSkinUpdate(ServerPlayerEntity player, String modelPath) {
@@ -182,13 +207,23 @@ public class PlayerData {
         // TODO: Уточнить, как помечать ServerState как dirty
     }
 
-    public void setActiveCharacter(Character character, ServerPlayerEntity player) {
-        combatCharacters.clear(); // Очищаем список, чтобы новый персонаж стал активным
-        combatCharacters.add(character);
-        System.out.println("PlayerData: Set active character for player: " + player.getGameProfile().getName());
-        applyToPlayer(player);
+    public static class Inventory {
+        private final List<Character> characters = new ArrayList<>();
+        public void addCharacter(Character character) {
+            characters.add(character);
+        }
     }
 
+// ------------------------------------------== Synchronize ==----------------------------------------------------------
+
+    public void syncDashCoolDown(ServerPlayerEntity player) {
+        System.out.println("PlayerData: Sent sync_dash_cool_down packet for state: " + dashCoolDown);
+        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+        buf.writeInt(dashCoolDown);
+        player.networkHandler.sendPacket(new CustomPayloadS2CPacket(
+                new Identifier(Axorunelostworlds.MOD_ID, "sync_dash_cool_down"),
+                buf));
+    }
     private void syncCombatMode(ServerPlayerEntity player) {
         System.out.println("PlayerData: Sent sync_combat_mode packet for state: " + combatState);
         PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
@@ -197,6 +232,8 @@ public class PlayerData {
                 new Identifier(Axorunelostworlds.MOD_ID, "sync_combat_mode"),
                 buf));
     }
+
+// ------------------------------------------== NBT ==------------------------------------------------------------------
 
     public void writeNbt(NbtCompound nbt) {
         nbt.putInt("CombatState", combatState.ordinal());
@@ -225,7 +262,6 @@ public class PlayerData {
         nbt.put("PathAccess", accessNbt);
         nbt.putBoolean("IsBuilding", isBuilding);
     }
-
     public static PlayerData fromNbt(UUID uuid, NbtCompound nbt) {
         PlayerData data = new PlayerData(uuid);
         data.combatState = CombatState.values()[nbt.getInt("CombatState")];
@@ -253,13 +289,5 @@ public class PlayerData {
             data.modelPath = nbt.getString("ModelPath");
 
         return data;
-    }
-
-    public static class Inventory {
-        private final List<Character> characters = new ArrayList<>();
-
-        public void addCharacter(Character character) {
-            characters.add(character);
-        }
     }
 }
