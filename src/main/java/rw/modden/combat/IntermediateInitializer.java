@@ -7,7 +7,6 @@ public class IntermediateInitializer {
         System.out.println("IntermediateInitializer: Initializing mechanics...");
         CharacterInitializer.initialize();
         ServerCombatMechanics.initialize();
-        CombatMechanics.initialize();
         // TODO: Добавить StunMechanic
     }
 }

@@ -2,7 +2,7 @@
   "name": "kllima777",
   "description": "",
   "authors": ["TPS"],
-  "model": "axorunelostworlds:models/kllima777/model.bbmodel",
+  "model": "model.bbmodel",
   "scripts": ["script.lua"],
   "color": "#00f0ff"
 }

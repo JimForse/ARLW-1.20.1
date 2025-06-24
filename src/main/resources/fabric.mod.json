@@ -17,13 +17,9 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"rw.modden.Axorunelostworlds"
-		],
-		"client": [
-			"rw.modden.combat.CombatMechanics",
-			"rw.modden.ClientNetworking",
-			"rw.modden.KeyInput",
-			"rw.modden.combat.StuntMechanicClient"
+			"rw.modden.Axorunelostworlds",
+			"rw.modden.server.ServerTickHandler",
+			"rw.modden.server.ServerNetworking"
 		],
 		"fabric-datagen": [
 			"rw.modden.AxorunelostworldsDataGenerator"
@@ -33,7 +29,7 @@
 		"axorunelostworlds.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.16.10",
+		"fabricloader": ">=0.16.14",
 		"minecraft": "~1.20.1",
 		"java": ">=17",
 		"fabric-api": "*",

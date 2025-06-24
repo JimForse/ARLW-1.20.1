@@ -2,7 +2,7 @@
   "name": "stalker_anomaly",
   "description": "",
   "authors": ["TPS"],
-  "model": "axorunelostworlds:models/stalker_anomaly/model.bbmodel",
+  "model": "model.bbmodel",
   "scripts": ["script.lua"],
   "color": "#ff2400"
 }

@@ -12,24 +12,18 @@ import rw.modden.weapon.Weapon;
 import java.util.UUID;
 
 public abstract class Character {
-    public enum CharacterType {
-        SUPPORT(100, 50, 0.8f),
-        TANK(200, 80, 1.0f),
-        ASSASSIN(80, 120, 1.2f);
 
-        public final int maxHealth;
-        public final int baseDamage;
-        public final float stunModifier;
+/*
+    Абстрактный класс для всех персонажей
+    Часть реализации делегируется в него
+*/
 
-        CharacterType(int maxHealth, int baseDamage, float stunModifier) {
-            this.maxHealth = maxHealth;
-            this.baseDamage = baseDamage;
-            this.stunModifier = stunModifier;
-        }
-    }
+// ----------------------------------------== Private ==----------------------------------------------------------------
 
     private static final UUID HEALTH_MODIFIER_UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
     private static final UUID DAMAGE_MODIFIER_UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174001");
+
+// ----------------------------------------== Protected ==--------------------------------------------------------------
 
     protected final CharacterType type;
     protected int starLevel;
@@ -40,6 +34,8 @@ public abstract class Character {
     protected final String characterName;
     protected String modelPath;
     protected PathType pathType;
+
+// ---------------------------------------------------------------------------------------------------------------------
 
     public Character(CharacterType type, int starLevel, String[] buffs, String characterName, PathType pathType) {
         this.type = type;
@@ -56,6 +52,15 @@ public abstract class Character {
     private static int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(max, value));
     }
+
+    protected boolean containsBuff(String buff) {
+        for (String b: buffs) {
+            if (b.equals(buff)) return true;
+        }
+        return false;
+    }
+
+// ----------------------------------------== Apply`s / Setters ==------------------------------------------------------
 
     public void applyToPlayer(ServerPlayerEntity player) {
         PlayerData data = PlayerData.getOrCreate(player);
@@ -90,50 +95,55 @@ public abstract class Character {
         applyBuffs(player);
         System.out.println("Character: Applied attributes for " + player.getGameProfile().getName() + ", health: " + this.health + ", damage: " + this.damage);
     }
-
     protected abstract void applyBuffs(ServerPlayerEntity player);
-
-    public abstract Weapon getStartingWeapon();
-
-    public CharacterType getType() {
-        return type;
-    }
-
-    public int getStarLevel() {
-        return starLevel;
-    }
-
-    public float getHealth() {
-        return health;
-    }
-
-    public int getDamage() {
-        return damage;
-    }
-
-    public float getStunModifier() {
-        return stunModifier;
-    }
-
-    public String[] getBuffs() {
-        return buffs;
-    }
-
-    public String getModelPath() {
-        return modelPath;
-    }
-
-    protected boolean containsBuff(String buff) {
-        for (String b : buffs) {
-            if (b.equals(buff)) return true;
-        }
-        return false;
-    }
-
     public void applyPathDefaults(PlayerData playerData) { // Задаёт начальные параметры пути
     }
 
+// ----------------------------------------== Getters ==----------------------------------------------------------------
     public PathType getPreferredPath() {
         return this.pathType;
+    }
+    public abstract Weapon getStartingWeapon();
+    public CharacterType getType() {
+        return type;
+    }
+    public int getStarLevel() {
+        return starLevel;
+    }
+    public float getHealth() {
+        return health;
+    }
+    public int getDamage() {
+        return damage;
+    }
+    public float getStunModifier() {
+        return stunModifier;
+    }
+    public String[] getBuffs() {
+        return buffs;
+    }
+    public String getModelPath() {
+        return modelPath;
+    }
+    public String getCharacterName() {
+        return characterName;
+    }
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+    public enum CharacterType {
+        SUPPORT(100, 50, 0.8f),
+        TANK(200, 80, 1.0f),
+        ASSASSIN(80, 120, 1.2f);
+
+        public final int maxHealth;
+        public final int baseDamage;
+        public final float stunModifier;
+
+        CharacterType(int maxHealth, int baseDamage, float stunModifier) {
+            this.maxHealth = maxHealth;
+            this.baseDamage = baseDamage;
+            this.stunModifier = stunModifier;
+        }
     }
 }

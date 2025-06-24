@@ -10,6 +10,14 @@ import rw.modden.character.characters.*;
 import rw.modden.combat.CombatState;
 
 public class CharacterInitializer {
+
+/*
+    Класс инициализации всех персонажей
+    Метод registerCharacter добавляет нового
+    А ниже уже сравнивается имя игрока в нижнем регистре, с персонажем
+    И при совпадении выдается модель с текстурой + персонаж и некоторые его данные
+*/
+
     private static final List<CharacterEntry> CHARACTERS = new ArrayList<>();
 
     public static void initialize() {
@@ -40,15 +48,18 @@ public class CharacterInitializer {
             String playerName = player.getGameProfile().getName().toLowerCase();
             System.out.println("CharacterInitializer: Player joined: " + playerName);
 
+            // Сбрасываем режим боя при входе
+            PlayerData data = PlayerData.getOrCreate(player);
+            data.setCombatMode(CombatState.NONE, player); // Сбрасываем в NONE
+
             // Загрузка сохранённых данных или создание нового персонажа
             for (CharacterEntry entry : CHARACTERS) {
                 if (entry.playerName.equals(playerName)) {
                     PlayerData playerData = PlayerData.getOrCreate(player);
                     if (!playerData.hasCharacter(playerName)) {
                         playerData.getInventory().addCharacter(entry.character);
-                        playerData.setModel("axorunelostworlds:models/" + playerName + "/model.bbmodel", player);
+                        playerData.setModel("axorunelostworlds:models/" + playerName, player);
                         playerData.markDirty();
-//                        playerData.setCombatMode(CombatState.NONE, player);
                         System.out.println("CharacterInitializer: Added character to inventory for " + playerName + " (not applied)");
                     }
                     return;

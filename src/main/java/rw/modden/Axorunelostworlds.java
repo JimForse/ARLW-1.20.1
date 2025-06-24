@@ -1,8 +1,11 @@
 package rw.modden;
 
+import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rw.modden.client.ClientClassesInitializer;
 import rw.modden.combat.IntermediateInitializer;
 import rw.modden.command.CommandClasesInitializer;
 
@@ -17,7 +20,8 @@ public class Axorunelostworlds implements ModInitializer {
 
 		IntermediateInitializer.initialize();
 		CommandClasesInitializer.initialize();
-		// ModDimensions.register();
+		if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT)
+			ClientClassesInitializer.initialize();
 	}
 }
 /*

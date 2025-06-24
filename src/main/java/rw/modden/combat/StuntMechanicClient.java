@@ -5,9 +5,8 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.nbt.NbtCompound;
 
-public class StuntMechanicClient implements ClientModInitializer{
-    @Override
-    public void onInitializeClient() {
+public class StuntMechanicClient {
+    public void initialize() {
         ClientPlayNetworking.registerGlobalReceiver(StunMechanic.STUN_UPDATE_PACKET, (client, handler, buf, responseSender) -> {
             int entityId = buf.readInt();
             NbtCompound stunNbt = buf.readNbt();
