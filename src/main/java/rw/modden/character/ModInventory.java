@@ -92,7 +92,8 @@ public class ModInventory {
             String type = charNbt.getString("Type");
             int starLevel = charNbt.getInt("StarLevel");
             Character character = CharacterInitializer.getCharacter(
-                    type.equals(Character.CharacterType.SUPPORT.name()) ? "kllima777" : "unknown"
+                    // TODO: Доработать (не должно быть null)
+                    type.equals(Character.CharacterType.SUPPORT.name()) ? null : "unknown"
             );
             if (character != null) {
                 inventory.characters.add(character);

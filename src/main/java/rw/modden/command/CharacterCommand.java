@@ -25,6 +25,7 @@ public class CharacterCommand {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(
                     CommandManager.literal("character")
+                            .requires(source -> source.hasPermissionLevel(2))
                             .then(CommandManager.literal("set")
                                     .then(CommandManager.argument("player", EntityArgumentType.player())
                                             .then(CommandManager.argument("character", StringArgumentType.word())

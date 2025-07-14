@@ -36,6 +36,7 @@ public class SkinCommand {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(
                     CommandManager.literal("skin")
+                            .requires(source -> source.hasPermissionLevel(2))
                             .then(CommandManager.literal("set")
                                     .requires(source -> source.hasPermissionLevel(2))
                                     .then(CommandManager.argument("player", EntityArgumentType.player())
@@ -54,16 +55,33 @@ public class SkinCommand {
                                                         }
 
                                                         PlayerData playerData = PlayerData.getOrCreate(targetPlayer);
-                                                        String modelPath = "axorunelostworlds:models/" + characterName;
-                                                        playerData.setModel(modelPath, targetPlayer);
+                                                        String modelPath = character.getModelPath(); // Используем путь из Character
+                                                        String animationPath = character.getAnimationPath();
+                                                        playerData.setModel(modelPath, animationPath, targetPlayer);
                                                         source.sendFeedback(
                                                                 () -> Text.literal("Установлен скин персонажа " + characterName + " для игрока " + targetPlayer.getGameProfile().getName()),
                                                                 true
                                                         );
-                                                        System.out.println("SkinCommand: Applied model " + modelPath + " for player " + targetPlayer.getGameProfile().getName());
+                                                        Axorunelostworlds.LOGGER.info("SkinCommand: Установлена модель {} для игрока {}", modelPath, targetPlayer.getGameProfile().getName());
                                                         return 1;
                                                     })
                                             )
+                                    )
+                            )
+                            .then(CommandManager.literal("get")
+                                    .then(CommandManager.argument("player", EntityArgumentType.player())
+                                            .suggests(PLAYER_SUGGESTIONS)
+                                            .executes(context -> {
+                                                ServerCommandSource source = context.getSource();
+                                                ServerPlayerEntity targetPlayer = EntityArgumentType.getPlayer(context, "player");
+                                                PlayerData playerData = PlayerData.getOrCreate(targetPlayer);
+                                                String modelPath = playerData.getModelPath();
+                                                source.sendFeedback(
+                                                        () -> Text.literal("Текущая модель игрока " + targetPlayer.getGameProfile().getName() + ": " + (modelPath != null ? modelPath : "нет модели")),
+                                                        false
+                                                );
+                                                return 1;
+                                            })
                                     )
                             )
             );
