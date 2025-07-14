@@ -31,14 +31,23 @@ dependencies {
 
 	modImplementation files('libs/litematica-fabric-1.20.1-0.15.4.jar')
 	modImplementation files('libs/malilib-fabric-1.20.1-0.16.3.jar')
-	modImplementation "maven.modrinth:figura:0.1.5+1.20.1"
+	modImplementation files('libs/[1.20.1][Fabric] RPG-HUD-3.10.jar')
+	modImplementation files('libs/simplyswords-fabric-1.56.0-1.20.1.jar')
+	modImplementation files('libs/architectury-9.2.14-fabric.jar')
+	modImplementation files('libs/cloth-config-11.1.136-fabric.jar')
+	modImplementation files('libs/runemodels-1.0.1.jar')
+	modImplementation files('libs/geckolib-fabric-1.20.1-4.7.1.2.jar')
+	//modImplementation files('libs/')
 }
 
 processResources {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
 	eachFile { details ->
 		println "Копируется: ${details.path}"
 	}
 }
+
 
 
 tasks.withType(JavaCompile).configureEach {
@@ -72,16 +81,24 @@ publishing {
 sourceSets {
 	main {
 		resources {
-			srcDirs = ['src/main/resources']
+			srcDirs 'src/main/resources'
 		}
 	}
 }
 
+tasks.named('sourcesJar') {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 task copyAssets(type: Copy) {
-	from 'src/main/resources/assets'
-	into 'run/assets'
+	from 'src/main/resources/assets/axorunelostworlds'
+	into "${buildDir}/resources/main/assets/axorunelostworlds"
+	include '**/*.bbmodel', '**/*.png', '**/*.json'
+	exclude '**/axorunelostworlds.mixins.json' // Исключаем mixins.json
 	eachFile { details ->
-		println "Копируется в run/assets: ${details.path}"
+		println "Копируется: ${details.path}"
 	}
 }
-runClient.dependsOn copyAssets
+
+processResources.dependsOn copyAssets
+runClient.dependsOn processResources

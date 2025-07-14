@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import rw.modden.character.Character;
 import rw.modden.character.CharacterInitializer;
 import rw.modden.character.PlayerData;
@@ -69,6 +70,22 @@ public class BattleCommand {
                                         System.out.println("BattleCommand: Stopped battle for " + player.getGameProfile().getName());
                                     }
                                     return 1;
-                                }))));
+                                })
+                        )
+                )
+                .then(literal("state")
+                        .then(argument("players", EntityArgumentType.player())
+                                .executes(context -> {
+                                    List<ServerPlayerEntity> players = new ArrayList<>(EntityArgumentType.getPlayers(context, "players"));
+                                    for (ServerPlayerEntity player: players) {
+                                        PlayerData data = PlayerData.getOrCreate(player);
+                                        System.out.println("BattleCommand: Battle state is: " + data.getCombatState());
+                                        context.getSource().sendMessage(Text.of("Battle state at "+ player.getGameProfile().getName() +" is: " + data.getCombatState()));
+                                    }
+                                    return 1;
+                                })
+                        )
+                )
+        );
     }
 }

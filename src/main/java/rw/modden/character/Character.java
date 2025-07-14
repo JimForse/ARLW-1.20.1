@@ -33,7 +33,8 @@ public abstract class Character {
     protected final String[] buffs;
     protected final String characterName;
     protected String modelPath;
-    protected PathType pathType;
+    protected String animationPath;
+    protected final PathType pathType;
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -45,7 +46,8 @@ public abstract class Character {
         this.stunModifier = type.stunModifier * (1 + starLevel * 0.1f);
         this.buffs = buffs != null ? buffs : new String[0];
         this.characterName = characterName;
-        this.modelPath = "axorunelostworlds/models/" + characterName.toLowerCase() + "/model.bbmodel";
+        this.modelPath = "models/" + characterName.toLowerCase() + "/model.geo.json";
+        this.animationPath = "models/" + characterName.toLowerCase() + "/animation.json";
         this.pathType = pathType;
     }
 
@@ -124,6 +126,9 @@ public abstract class Character {
     }
     public String getModelPath() {
         return modelPath;
+    }
+    public String getAnimationPath() {
+        return animationPath;
     }
     public String getCharacterName() {
         return characterName;

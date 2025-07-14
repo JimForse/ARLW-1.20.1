@@ -9,6 +9,9 @@ import java.util.List;
 import rw.modden.character.characters.*;
 import rw.modden.combat.CombatState;
 
+import static rw.modden.Axorunelostworlds.LOGGER;
+
+import net.minecraft.entity.player.PlayerEntity;
 public class CharacterInitializer {
 
 /*
@@ -23,49 +26,34 @@ public class CharacterInitializer {
     public static void initialize() {
         System.out.println("CharacterInitializer: Initializing characters...");
 
-        registerCharacter(
-                "kllima777",
-                new Kllima777Character()
-        );
-        registerCharacter(
-                "firrice",
-                new FIRrICECharacter()
-        );
-        registerCharacter(
-                "stalker_anomaly",
-                new Stalker_AnomalyCharacter()
-        );
-        registerCharacter(
-                "spectorprofm",
-                new SpectorprofmCharacter()
-        );
-
+        registerCharacter("kllima777", new Kllima777Character());
+        registerCharacter("firrice", new FIRrICECharacter());
+        registerCharacter("stalker_anomaly", new Stalker_AnomalyCharacter());
+        registerCharacter("spectorprofm", new SpectorprofmCharacter());
         // TODO: Добавить других персонажей
 
         // Обработчик входа игрока
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.getPlayer();
             String playerName = player.getGameProfile().getName().toLowerCase();
-            System.out.println("CharacterInitializer: Player joined: " + playerName);
+            LOGGER.info("CharacterInitializer: Игрок {} вошел", playerName);
 
             // Сбрасываем режим боя при входе
             PlayerData data = PlayerData.getOrCreate(player);
-            data.setCombatMode(CombatState.NONE, player); // Сбрасываем в NONE
+            data.setCombatMode(CombatState.NONE, player);
 
             // Загрузка сохранённых данных или создание нового персонажа
             for (CharacterEntry entry : CHARACTERS) {
                 if (entry.playerName.equals(playerName)) {
-                    PlayerData playerData = PlayerData.getOrCreate(player);
-                    if (!playerData.hasCharacter(playerName)) {
-                        playerData.getInventory().addCharacter(entry.character);
-                        playerData.setModel("axorunelostworlds:models/" + playerName, player);
-                        playerData.markDirty();
-                        System.out.println("CharacterInitializer: Added character to inventory for " + playerName + " (not applied)");
+                    if (!data.hasCharacter(playerName)) {
+                        data.getInventory().addCharacter(entry.character);
+                        data.markDirty();
+                        LOGGER.info("CharacterInitializer: Добавлен персонаж для {} (не применён)", playerName);
                     }
                     return;
                 }
             }
-            System.out.println("CharacterInitializer: No character found for " + playerName);
+            LOGGER.info("CharacterInitializer: Персонаж для {} не найден", playerName);
         });
     }
 

@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import rw.modden.client.ClientClassesInitializer;
 import rw.modden.combat.IntermediateInitializer;
 import rw.modden.command.CommandClasesInitializer;
+import rw.modden.server.ServerClassesInitializer;
 
 public class Axorunelostworlds implements ModInitializer {
 	public static final String MOD_ID = "axorunelostworlds";
@@ -20,6 +21,7 @@ public class Axorunelostworlds implements ModInitializer {
 
 		IntermediateInitializer.initialize();
 		CommandClasesInitializer.initialize();
+		ServerClassesInitializer.initialize();
 		if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT)
 			ClientClassesInitializer.initialize();
 	}
