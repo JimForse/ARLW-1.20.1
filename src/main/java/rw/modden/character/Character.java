@@ -33,6 +33,7 @@ public abstract class Character {
     protected final String[] buffs;
     protected final String characterName;
     protected String modelPath;
+    protected final String texturePath;
     protected String animationPath;
     protected final PathType pathType;
 
@@ -46,8 +47,9 @@ public abstract class Character {
         this.stunModifier = type.stunModifier * (1 + starLevel * 0.1f);
         this.buffs = buffs != null ? buffs : new String[0];
         this.characterName = characterName;
-        this.modelPath = "models/" + characterName.toLowerCase() + "/model.geo.json";
-        this.animationPath = "models/" + characterName.toLowerCase() + "/animation.json";
+        this.modelPath = String.format("%s/%s.geo.json",characterName.toLowerCase(),characterName.toLowerCase());
+        this.animationPath = String.format("%s/%s.anim.json",characterName.toLowerCase(),characterName.toLowerCase());
+        this.texturePath = String.format("%s/%s.png",characterName.toLowerCase(),characterName.toLowerCase());
         this.pathType = pathType;
     }
 
@@ -129,6 +131,9 @@ public abstract class Character {
     }
     public String getAnimationPath() {
         return animationPath;
+    }
+    public String getTexturePath() {
+        return texturePath;
     }
     public String getCharacterName() {
         return characterName;

@@ -25,10 +25,12 @@ public class PlayerData {
 
 // ----------------------------------------== Private ==----------------------------------------------------------------
     private String playerName = "";
+    private String customName;
     private CombatState combatState = CombatState.NONE;
     private final Inventory inventory = new Inventory();
     private final List<Character> combatCharacters = new ArrayList<>();
     private String modelPath;
+    private String texturePath;
     private String animationPath;
     private boolean dashStatus;
     private boolean modelChanged = false;
@@ -43,7 +45,7 @@ public class PlayerData {
     public boolean isBuilding;
 // ---------------------------------------------------------------------------------------------------------------------
 
-    public PlayerData(UUID playerUuid) {
+    public PlayerData(String playerName) {
         this.playerName = playerName.toLowerCase();
         this.pathType = null;
         this.resources = new HashMap<>();
@@ -51,7 +53,8 @@ public class PlayerData {
         this.pathAccess = new HashMap<>();
         this.isBuilding = false;
         this.modelPath = "minecraft:entity/player/wide";
-        this.animationPath = "animations/player_animation.json";
+        this.texturePath = "minecraft:textures/entity/player/wide.png";
+        this.animationPath = "minecraft:animations/player_animation.json";
     }
 
 // ----------------------------------------== Getters ==----------------------------------------------------------------
@@ -62,10 +65,15 @@ public class PlayerData {
     public String getModelPath() {
         return modelPath;
     }
+    public String getTexturePath() {
+        return texturePath;
+    }
     public String getAnimationPath() {
         return animationPath;
     }
-    public CombatState getCombatState() { return combatState; }
+    public CombatState getCombatState() {
+        return combatState;
+    }
     public Inventory getInventory() {
         return inventory;
     }
@@ -85,27 +93,41 @@ public class PlayerData {
     public boolean isEventCombatMode() {
         return combatState == CombatState.EVENT;
     }
-    public boolean hasCharacter(String playerName) {
-        for (Character character: inventory.characters) {
-            if (character.getClass().getSimpleName().toLowerCase().contains(playerName.toLowerCase())) {
+    public boolean hasCharacter(String characterName) {
+        for (Character character : inventory.characters) {
+            if (character.getClass().getSimpleName().toLowerCase().contains(characterName.toLowerCase())) {
                 return true;
             }
         }
         return false;
     }
+    public String getCustomName() {
+        return customName != null ? customName : playerName;
+    }
 
 // ----------------------------------------== Setters ==----------------------------------------------------------------
 
-    public void setModel(String modelPath, String animationPath, ServerPlayerEntity player) {
+    public void setCustomName(String customName, ServerPlayerEntity player) {
+        if (Objects.equals(this.customName, customName)) {
+            return; // Не отправляем пакет, если ник не изменился
+        }
+        this.customName = customName;
+        Axorunelostworlds.LOGGER.info("PlayerData: Установлен кастомный ник {} для {}", customName, playerName);
+        syncCustomName(player);
+    }
+    public void setModel(String modelPath, String texturePath, String animationPath, ServerPlayerEntity player) {
         this.modelPath = modelPath;
+        this.texturePath = texturePath;
         this.animationPath = animationPath;
         this.modelInitialized = true;
-        Axorunelostworlds.LOGGER.info("PlayerData: Установка модели: {}, анимации: {} для игрока: {}", modelPath, animationPath, player.getGameProfile().getName());
+        Axorunelostworlds.LOGGER.info("PlayerData: Установка модели: {}, текстуры: {}, анимации: {} для игрока: {}", modelPath, texturePath, animationPath, playerName);
         syncModel(player);
     }
-    public void setModel(String modelPath, ServerPlayerEntity player) {
-        String animationPath = "models/" + player.getGameProfile().getName().toLowerCase() + "/animation.json";
-        setModel(modelPath, animationPath, player);
+    public void setModel(String customName, ServerPlayerEntity player) {
+        String modelPath = customName + "/" + customName + ".geo.json";
+        String texturePath = customName + "/" + customName + ".png";
+        String animationPath = customName + "/anim.json";
+        setModel(modelPath, texturePath, animationPath, player);
     }
     public void setCombatMode(CombatState state, ServerPlayerEntity player) {
         this.combatState = state;
@@ -114,6 +136,7 @@ public class PlayerData {
     }
     public void setDashCoolDown(int i) {
         dashCoolDown = i;
+        Axorunelostworlds.LOGGER.info("PlayerData: Установлен dashCoolDown={} для {}", i, playerName);
     }
     public void setActiveCharacter(Character character, ServerPlayerEntity player) {
         combatCharacters.clear();
@@ -125,9 +148,9 @@ public class PlayerData {
             Character selected = combatCharacters.remove(index);
             combatCharacters.add(0, selected);
             applyToPlayer(player);
-            System.out.println("PlayerData: Switched to character at index " + index + " for player: " + player.getGameProfile().getName());
+            Axorunelostworlds.LOGGER.info("PlayerData: Переключён персонаж на индекс {} для {}", index, playerName);
         } else {
-            System.out.println("PlayerData: Invalid character index " + index + " for player: " + player.getGameProfile().getName());
+            Axorunelostworlds.LOGGER.warn("PlayerData: Неверный индекс персонажа {} для {}", index, playerName);
         }
     }
     public void setDashStatus(boolean b) {
@@ -138,25 +161,28 @@ public class PlayerData {
 
     public static PlayerData getOrCreate(ServerPlayerEntity player) {
         MinecraftServer server = player.getServer();
-        if (server == null) return new PlayerData(player.getUuid());
+        if (server == null) {
+            Axorunelostworlds.LOGGER.warn("PlayerData: Сервер null для {}, создаём временные данные", player.getGameProfile().getName());
+            return new PlayerData(player.getGameProfile().getName());
+        }
 
         ServerState state = ServerState.get(server);
-        PlayerData data = state.getPlayerData(player.getUuid());
+        String playerName = player.getGameProfile().getName().toLowerCase();
+        PlayerData data = state.getPlayerData(playerName);
         if (data == null) {
-            data = new PlayerData(player.getUuid());
-            state.setPlayerData(player.getUuid(), data);
+            data = new PlayerData(playerName);
+            state.setPlayerData(playerName, data);
         }
         if (!data.modelInitialized) {
-            String playerName = player.getGameProfile().getName().toLowerCase();
-            // Устанавливаем модель только если персонаж существует, иначе стандартная
-            Character character = CharacterInitializer.getCharacter(playerName);
+            String customName = data.getCustomName();
             data.setModel(
-                    character != null ? character.getModelPath() : "minecraft:entity/player/wide",
-                    character != null ? character.getAnimationPath() : "animations/player_animation.json",
+                    customName + "/" + customName + ".geo.json",
+                    customName + "/" + customName + ".png",
+                    customName + "/anim.json",
                     player
             );
             data.modelInitialized = true;
-            Axorunelostworlds.LOGGER.info("PlayerData: Инициализация модели для {}: {}", playerName, data.modelPath);
+            Axorunelostworlds.LOGGER.info("PlayerData: Инициализация модели для {}: {}, текстуры: {}, анимации: {}", playerName, data.modelPath, data.texturePath, data.animationPath);
         }
         return data;
     }
@@ -164,7 +190,7 @@ public class PlayerData {
     public void applyToPlayer(ServerPlayerEntity player) {
         if (combatState != CombatState.NONE && !combatCharacters.isEmpty()) {
             combatCharacters.get(0).applyToPlayer(player);
-            setModel(combatCharacters.get(0).getModelPath(), combatCharacters.get(0).getAnimationPath(), player);
+            setModel(combatCharacters.get(0).getCharacterName(), player);
         } else {
             resetPlayerAttributes(player);
         }
@@ -205,8 +231,13 @@ public class PlayerData {
 // ------------------------------------------== Synchronize ==----------------------------------------------------------
 
     private void syncModel(ServerPlayerEntity player) {
+        if (player.getServer() == null) {
+            Axorunelostworlds.LOGGER.warn("PlayerData: Не удалось синхронизировать модель, сервер null для {}", playerName);
+            return;
+        }
         PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
         buf.writeString(modelPath);
+        buf.writeString(texturePath);
         buf.writeString(animationPath);
         buf.writeString(playerName);
         for (ServerPlayerEntity otherPlayer : player.getServer().getPlayerManager().getPlayerList()) {
@@ -215,6 +246,10 @@ public class PlayerData {
         }
     }
     public void syncDashCoolDown(ServerPlayerEntity player) {
+        if (player.getServer() == null) {
+            Axorunelostworlds.LOGGER.warn("PlayerData: Не удалось синхронизировать dashCoolDown, сервер null для {}", playerName);
+            return;
+        }
         PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
         buf.writeInt(dashCoolDown);
         player.networkHandler.sendPacket(new CustomPayloadS2CPacket(
@@ -222,11 +257,28 @@ public class PlayerData {
                 buf));
     }
     private void syncCombatMode(ServerPlayerEntity player) {
+        if (player.getServer() == null) {
+            Axorunelostworlds.LOGGER.warn("PlayerData: Не удалось синхронизировать combatMode, сервер null для {}", playerName);
+            return;
+        }
         PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
         buf.writeInt(combatState.ordinal());
         player.networkHandler.sendPacket(new CustomPayloadS2CPacket(
                 new Identifier(Axorunelostworlds.MOD_ID, "sync_combat_mode"),
                 buf));
+    }
+    private void syncCustomName(ServerPlayerEntity player) {
+        if (player.getServer() == null) {
+            Axorunelostworlds.LOGGER.warn("PlayerData: Не удалось синхронизировать customName, сервер null для {}", playerName);
+            return;
+        }
+        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+        buf.writeString(customName != null ? customName : "");
+        buf.writeString(playerName);
+        for (ServerPlayerEntity otherPlayer : player.getServer().getPlayerManager().getPlayerList()) {
+            otherPlayer.networkHandler.sendPacket(new CustomPayloadS2CPacket(
+                    new Identifier(Axorunelostworlds.MOD_ID, "sync_custom_name"), buf));
+        }
     }
 
 // ------------------------------------------== NBT ==------------------------------------------------------------------
@@ -234,6 +286,7 @@ public class PlayerData {
     public void writeNbt(NbtCompound nbt) {
         nbt.putInt("CombatState", combatState.ordinal());
         nbt.putString("ModelPath", modelPath);
+        nbt.putString("TexturePath", texturePath);
         nbt.putString("AnimationPath", animationPath);
         nbt.putBoolean("ModelInitialized", modelInitialized);
         NbtCompound inventoryNbt = new NbtCompound();
@@ -249,33 +302,38 @@ public class PlayerData {
         nbt.put("Resources", resourcesNbt);
 
         NbtCompound passiveNbt = new NbtCompound();
-        for(Map.Entry<PathType, Boolean> entry: hasPassiveGeneration.entrySet())
+        for (Map.Entry<PathType, Boolean> entry : hasPassiveGeneration.entrySet())
             passiveNbt.putBoolean(entry.getKey().name(), entry.getValue());
         nbt.put("HasPassiveGeneration", passiveNbt);
 
         NbtCompound accessNbt = new NbtCompound();
-        for (Map.Entry<PathType, Long> entry: pathAccess.entrySet())
+        for (Map.Entry<PathType, Long> entry : pathAccess.entrySet())
             accessNbt.putLong(entry.getKey().name(), entry.getValue());
         nbt.put("PathAccess", accessNbt);
         nbt.putBoolean("IsBuilding", isBuilding);
+
+        if (customName != null) {
+            nbt.putString("CustomName", customName);
+        }
     }
-    public static PlayerData fromNbt(UUID uuid, NbtCompound nbt) {
-        PlayerData data = new PlayerData(uuid);
+    public static PlayerData fromNbt(String playerName, NbtCompound nbt) {
+        PlayerData data = new PlayerData(playerName);
         data.combatState = CombatState.values()[nbt.getInt("CombatState")];
         data.modelPath = nbt.getString("ModelPath");
+        data.texturePath = nbt.getString("TexturePath");
         data.animationPath = nbt.getString("AnimationPath");
         data.modelInitialized = nbt.getBoolean("ModelInitialized");
 
         NbtCompound resourcesNbt = nbt.getCompound("Resources");
-        for (String key: resourcesNbt.getKeys())
+        for (String key : resourcesNbt.getKeys())
             data.resources.put(PathType.valueOf(key), resourcesNbt.getFloat(key));
 
         NbtCompound hasPassiveGenerationNbt = nbt.getCompound("HasPassiveGeneration");
-        for (String key: hasPassiveGenerationNbt.getKeys())
+        for (String key : hasPassiveGenerationNbt.getKeys())
             data.hasPassiveGeneration.put(PathType.valueOf(key), hasPassiveGenerationNbt.getBoolean(key));
 
         NbtCompound pathAccessNbt = nbt.getCompound("PathAccess");
-        for (String key: pathAccessNbt.getKeys())
+        for (String key : pathAccessNbt.getKeys())
             data.pathAccess.put(PathType.valueOf(key), pathAccessNbt.getLong(key));
 
         data.isBuilding = nbt.getBoolean("IsBuilding");
@@ -286,6 +344,8 @@ public class PlayerData {
         if (nbt.contains("ModelPath"))
             data.modelPath = nbt.getString("ModelPath");
 
+        if (nbt.contains("CustomName"))
+            data.customName = nbt.getString("CustomName");
         return data;
     }
 }

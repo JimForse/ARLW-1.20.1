@@ -1,8 +1,0 @@
-{
-  "name": "stalker_anomaly",
-  "description": "",
-  "authors": ["TPS"],
-  "model": "model.bbmodel",
-  "scripts": ["script.lua"],
-  "color": "#ff2400"
-}

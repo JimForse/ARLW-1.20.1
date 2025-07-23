@@ -8,27 +8,32 @@ public class CharacterSwitcher {
         Character character = null;
         String modelPath = null;
         String animationPath = null;
+        String texturePath = null;
 
         switch (characterName.toLowerCase()) {
             case "kllima777":
                 character = new Kllima777Character();
-                modelPath = "models/kllima777/model.geo.json";
-                animationPath = "models/kllima777/animation.json";
+                modelPath = "kllima777/model.geo.json";
+                animationPath = "kllima777/anim.json";
+                texturePath = "kllima777/kllima777.png";
                 break;
             case "firrice":
                 character = new FIRrICECharacter();
-                modelPath = "models/firrice/model.geo.json";
-                animationPath = "models/firrice/animation.json";
+                modelPath = "firrice/model.geo.json";
+                animationPath = "firrice/anim.json";
+                texturePath = "firrice/firrice.png";
                 break;
             case "stalker_anomaly":
                 character = new Stalker_AnomalyCharacter();
-                modelPath = "models/stalker_anomaly/model.geo.json";
-                animationPath = "models/stalker_anomaly/animation.json";
+                modelPath = "stalker_anomaly/model.geo.json";
+                animationPath = "stalker_anomaly/anim.json";
+                texturePath = "stalker_anomaly/stalker_anomaly.png";
                 break;
             case "spectorprofm":
                 character = new SpectorprofmCharacter();
-                modelPath = "models/spectorprofm/model.geo.json";
-                animationPath = "models/spectorprofm/animation.json";
+                modelPath = "spectorprofm/model.geo.json";
+                animationPath = "spectorprofm/anim.json";
+                texturePath = "spectorprofm/spectorprofm.png";
                 break;
             default:
                 return false;
@@ -36,7 +41,7 @@ public class CharacterSwitcher {
 
         PlayerData data = PlayerData.getOrCreate(player);
         data.setActiveCharacter(character, player);
-        data.setModel(modelPath, animationPath, player);
+        data.setModel(modelPath, texturePath, animationPath, player);
         return true;
     }
 }

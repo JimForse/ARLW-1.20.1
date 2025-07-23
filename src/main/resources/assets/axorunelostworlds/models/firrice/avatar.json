@@ -1,8 +1,0 @@
-{
-  "name": "firrice",
-  "description": "",
-  "authors": ["TPS"],
-  "model": "model.bbmodel",
-  "scripts": ["script.lua"],
-  "color": "#27aae0"
-}

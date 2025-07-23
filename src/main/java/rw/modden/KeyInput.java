@@ -71,7 +71,7 @@ public class KeyInput {
 
             GameOptions options = client.options;
             CombatState state = ClientNetworking.getCombatState();
-            int dashCoolDown = ClientNetworking.getDashCoolDown(client.player.getUuid());
+            int dashCoolDown = ClientNetworking.getDashCoolDown(client.player.getEntityName());
 
             // Обработка боевых клавиш
             if (state != CombatState.NONE) {

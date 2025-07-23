@@ -9,6 +9,7 @@ import net.minecraft.util.Identifier;
 import rw.modden.Axorunelostworlds;
 import rw.modden.combat.CombatState;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -35,8 +36,10 @@ public class ClientNetworking {
     private static String pendingModelPath = null;
     private static String pendingAnimationPath = null;
     private static CombatState combatState = CombatState.NONE;
+    private static String pendingTexturePath = null;
     private static final Map<String, ModelData> playerModels = new HashMap<>();
     private static final Map<String, CustomPlayerModel> playerGeoModels = new HashMap<>();
+    private static final Map<String, String> playerCustomNames = new HashMap<>();
     private static final Map<String, Integer> playerDashCoolDowns = new HashMap<>();
     private static Integer pendingDashCoolDowns = null;
 
@@ -45,11 +48,13 @@ public class ClientNetworking {
                 new Identifier(Axorunelostworlds.MOD_ID, "sync_model"),
                 (client, handler, buf, responseSender) -> {
                     String modelPath = buf.readString();
+                    String texturePath = buf.readString();
                     String animationPath = buf.readString();
                     String playerName = buf.readString();
-                    LOGGER.info("ClientNetworking: Получен sync_model: modelPath={}, animationPath={}, playerName={}", modelPath, animationPath, playerName);
+                    LOGGER.info("ClientNetworking: Получен sync_model: modelPath={}, texturePath={}, animationPath={}, playerName={}",
+                            modelPath, texturePath, animationPath, playerName);
                     if (modelPath.isEmpty()) return;
-                    client.execute(() -> applyModel(modelPath, animationPath, getPlayerByName(playerName)));
+                    client.execute(() -> applyModel(modelPath, texturePath, animationPath, getPlayerByName(playerName)));
                 }
         );
 
@@ -68,15 +73,34 @@ public class ClientNetworking {
                 new Identifier(Axorunelostworlds.MOD_ID, "player_join"),
                 (client, handler, buf, responseSender) -> {
                     if (client.player != null) {
-                        if (pendingModelPath != null && pendingAnimationPath != null) {
-                            LOGGER.info("player_join: Applying pending model: {}, animation: {}", pendingModelPath, pendingAnimationPath);
+                        if (pendingModelPath != null && pendingTexturePath != null && pendingAnimationPath != null) {
+                            LOGGER.info("player_join: Applying pending model: {}, texture: {}, animation: {}",
+                                    pendingModelPath, pendingTexturePath, pendingAnimationPath);
                             setDashCoolDown(client.player, pendingDashCoolDowns);
-                            applyModel(pendingModelPath, pendingAnimationPath, client.player);
-                            playerModels.put(client.player.getGameProfile().getName().toLowerCase(), new ModelData(pendingModelPath, pendingAnimationPath));
+                            applyModel(pendingModelPath, pendingTexturePath, pendingAnimationPath, client.player);
+                            playerModels.put(client.player.getGameProfile().getName().toLowerCase(),
+                                    new ModelData(pendingModelPath, pendingAnimationPath));
                             pendingModelPath = null;
+                            pendingTexturePath = null;
                             pendingAnimationPath = null;
                         }
                     }
+                }
+        );
+
+        ClientPlayNetworking.registerGlobalReceiver(
+                new Identifier(Axorunelostworlds.MOD_ID, "sync_custom_name"),
+                (client, handler, buf, responseSender) -> {
+                    String customName = buf.readString();
+                    String playerName = buf.readString();
+                    client.execute(() -> {
+                        if (!customName.isEmpty()) {
+                            playerCustomNames.put(playerName.toLowerCase(), customName);
+                            LOGGER.info("ClientNetworking: Установлен кастомный ник {} для {}", customName, playerName);
+                        } else {
+                            playerCustomNames.remove(playerName.toLowerCase());
+                        }
+                    });
                 }
         );
 
@@ -99,30 +123,58 @@ public class ClientNetworking {
         }
     }
 
-    public static void applyModel(String modelPath, String animationPath, PlayerEntity player) {
+    public static void applyModel(String modelPath, String texturePath, String animationPath, PlayerEntity player) {
         if (player == null) {
             LOGGER.warn("ClientNetworking: Игрок null, пропуск модели: {}", modelPath);
             return;
         }
         String playerName = player.getGameProfile().getName().toLowerCase();
+        String entityName = getCustomName(playerName).toLowerCase();
         if (modelPath.startsWith("minecraft:")) {
             LOGGER.info("ClientNetworking: Стандартная модель: {}, пропуск", modelPath);
-            playerModels.put(playerName, new ModelData("minecraft:entity/player/wide", "animations/player_animation.json"));
-            playerGeoModels.remove(playerName); // Удаляем кастомную модель
+            playerModels.put(playerName, new ModelData("minecraft:entity/player/wide", "minecraft:animations/player_animation.json"));
+            playerGeoModels.remove(playerName);
             return;
         }
         try {
             // Проверка путей
             if (!modelPath.endsWith(".geo.json")) {
                 LOGGER.error("ClientNetworking: Неверный путь модели: {}", modelPath);
-                playerModels.put(playerName, new ModelData("minecraft:entity/player/wide", "animations/player_animation.json"));
+                playerModels.put(playerName, new ModelData("minecraft:entity/player/wide", "minecraft:animations/player_animation.json"));
+                playerGeoModels.remove(playerName);
+                return;
+            }
+            if (!texturePath.endsWith(".png")) {
+                LOGGER.error("ClientNetworking: Неверный путь текстуры: {}", texturePath);
+                playerModels.put(playerName, new ModelData("minecraft:entity/player/wide", "minecraft:animations/player_animation.json"));
+                playerGeoModels.remove(playerName);
+                return;
+            }
+            if (!animationPath.endsWith(".anim.json")) {
+                LOGGER.error("ClientNetworking: Неверный путь анимации: {}", animationPath);
+                playerModels.put(playerName, new ModelData("minecraft:entity/player/wide", "minecraft:animations/player_animation.json"));
                 playerGeoModels.remove(playerName);
                 return;
             }
 
+            // Проверка наличия файлов
+            Path runeModelsDir = Paths.get(MinecraftClient.getInstance().runDirectory.getPath(), "RuneModels");
+            File modelFile = runeModelsDir.resolve(modelPath).toFile();
+            File textureFile = runeModelsDir.resolve(texturePath).toFile();
+            File animationFile = runeModelsDir.resolve(animationPath).toFile();
+            if (!modelFile.exists() || !textureFile.exists()) {
+                LOGGER.error("ClientNetworking: Файлы не найдены: model={}, texture={}", modelPath, texturePath);
+                playerModels.put(playerName, new ModelData("minecraft:entity/player/wide", "minecraft:animations/player_animation.json"));
+                playerGeoModels.remove(playerName);
+                return;
+            }
+            if (!animationFile.exists()) {
+                LOGGER.warn("ClientNetworking: Файл анимации не найден: {}, продолжаем без анимации", animationPath);
+            }
+
             // Получаем рендерер
             EntityRenderer<?> renderer = MinecraftClient.getInstance().getEntityRenderDispatcher().getRenderer(player);
-            if (!(renderer instanceof CustomPlayerRenderer customRenderer)) {
+            if (!(renderer instanceof CustomPlayerRenderer)) {
                 LOGGER.warn("ClientNetworking: Рендерер для {} не является CustomPlayerRenderer, текущий тип: {}, пропуск",
                         playerName, renderer.getClass().getSimpleName());
                 return;
@@ -132,34 +184,21 @@ public class ClientNetworking {
             CustomPlayerModel geoModel = playerGeoModels.computeIfAbsent(playerName,
                     k -> new CustomPlayerModel(Axorunelostworlds.MOD_ID));
             geoModel.setModelPath(modelPath);
+            geoModel.setTexturePath(texturePath);
             geoModel.setAnimationPath(animationPath);
             playerModels.put(playerName, new ModelData(modelPath, animationPath));
-            LOGGER.info("ClientNetworking: Загружаю модель {} и анимацию {} для {}", modelPath, animationPath, playerName);
 
-            // Проверка загрузки
-            MinecraftClient client = MinecraftClient.getInstance();
-            client.execute(() -> {
-                int attempts = 0;
-                while (attempts < 10) {
-                    if (customRenderer.getGeoModel() != null) {
-                        LOGGER.info("ClientNetworking: Модель загружена: {}", modelPath);
-                        return;
-                    }
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException e) {
-                        LOGGER.error("ClientNetworking: Ошибка ожидания: {}", e.getMessage());
-                    }
-                    attempts++;
-                }
-                LOGGER.warn("ClientNetworking: Не удалось загрузить модель: {}", modelPath);
-            });
+            // Логируем успешное применение
+            LOGGER.info("ClientNetworking: Применена модель {}, текстура {} и анимация {} для {}",
+                    modelPath, texturePath, animationPath, playerName);
         } catch (Exception e) {
-            LOGGER.error("ClientNetworking: Ошибка загрузки модели {}: {}", modelPath, e.getMessage());
-            playerModels.put(playerName, new ModelData("minecraft:entity/player/wide", "animations/player_animation.json"));
+            LOGGER.error("ClientNetworking: Ошибка загрузки модели {}, текстуры {} или анимации {}: {}",
+                    modelPath, texturePath, animationPath, e.getMessage());
+            playerModels.put(playerName, new ModelData("minecraft:entity/player/wide", "minecraft:animations/player_animation.json"));
             playerGeoModels.remove(playerName);
         }
     }
+
 // ----------------------------------------== Getters ==----------------------------------------------------------------
 
     public static CombatState getCombatState() {
@@ -168,11 +207,14 @@ public class ClientNetworking {
     public static CustomPlayerModel getGeoModel(String playerName) {
         return playerGeoModels.get(playerName.toLowerCase());
     }
+    public static String getCustomName(String playerName) {
+        return playerCustomNames.getOrDefault(playerName.toLowerCase(), playerName);
+    }
     public static ModelData getPlayerModel(String playerName) {
         return playerModels.getOrDefault(playerName.toLowerCase(), new ModelData("minecraft:entity/player/wide", "animations/player_animation.json"));
     }
-    public static int getDashCoolDown(UUID playerUuid) {
-        return playerDashCoolDowns.getOrDefault(playerUuid, 60);
+    public static int getDashCoolDown(String playerName) {
+        return playerDashCoolDowns.getOrDefault(playerName.toLowerCase(), 60);
     }
     private static PlayerEntity getPlayerByName(String playerName) {
         return MinecraftClient.getInstance().world != null

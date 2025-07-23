@@ -55,9 +55,10 @@ public class SkinCommand {
                                                         }
 
                                                         PlayerData playerData = PlayerData.getOrCreate(targetPlayer);
-                                                        String modelPath = character.getModelPath(); // Используем путь из Character
+                                                        String modelPath = character.getModelPath();
                                                         String animationPath = character.getAnimationPath();
-                                                        playerData.setModel(modelPath, animationPath, targetPlayer);
+                                                        String texturePath = character.getTexturePath();
+                                                        playerData.setModel(modelPath, texturePath, animationPath, targetPlayer);
                                                         source.sendFeedback(
                                                                 () -> Text.literal("Установлен скин персонажа " + characterName + " для игрока " + targetPlayer.getGameProfile().getName()),
                                                                 true
@@ -86,5 +87,9 @@ public class SkinCommand {
                             )
             );
         });
+    }
+
+    public static SuggestionProvider<ServerCommandSource> getPlayerSuggestions() {
+        return PLAYER_SUGGESTIONS;
     }
 }
