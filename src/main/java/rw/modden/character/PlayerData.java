@@ -136,7 +136,6 @@ public class PlayerData {
     }
     public void setDashCoolDown(int i) {
         dashCoolDown = i;
-        Axorunelostworlds.LOGGER.info("PlayerData: Установлен dashCoolDown={} для {}", i, playerName);
     }
     public void setActiveCharacter(Character character, ServerPlayerEntity player) {
         combatCharacters.clear();

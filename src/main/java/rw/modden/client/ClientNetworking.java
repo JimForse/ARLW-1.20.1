@@ -1,19 +1,23 @@
 package rw.modden.client;
 
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.model.ModelData;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
 import rw.modden.Axorunelostworlds;
+import rw.modden.client.particle.PrimordialMatterParticle;
 import rw.modden.combat.CombatState;
+import rw.modden.world.dimension.ModDimensions;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import net.minecraft.util.math.random.Random;
 import java.util.UUID;
 
 import static rw.modden.Axorunelostworlds.LOGGER;
@@ -44,6 +48,7 @@ public class ClientNetworking {
     private static Integer pendingDashCoolDowns = null;
 
     public void initialize() {
+        LOGGER.info("ClientNetworking.initialize called!");
         ClientPlayNetworking.registerGlobalReceiver(
                 new Identifier(Axorunelostworlds.MOD_ID, "sync_model"),
                 (client, handler, buf, responseSender) -> {
@@ -113,6 +118,22 @@ public class ClientNetworking {
                         pendingDashCoolDowns = buf.readInt();
                 }
         );
+
+        // Регистрация фабрики частицы
+        ParticleFactoryRegistry.getInstance().register(ModDimensions.PRIMORDIAL_MATTER, PrimordialMatterParticle.Factory::new);
+        LOGGER.info("Registered particle factory for primordialmatter");
+
+        // Спавн частиц в измерении create
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.world != null && client.world.getRegistryKey() == ModDimensions.CREATE_WORLD && client.player != null) {
+                Random random = client.world.random;
+                if (random.nextFloat() < 0.03f) {
+                    double x = client.player.getX() + (random.nextDouble() * 32 - 16);
+                    double y = client.player.getY() + (random.nextDouble() * 16 - 8);
+                    double z = client.player.getZ() + (random.nextDouble() * 32 - 16);
+                    client.world.addParticle(ModDimensions.PRIMORDIAL_MATTER, x, y, z, 0.0, 0.01, 0.0);
+                }}
+        });
     }
 
 // ----------------------------------------== Apply`s / Setters ==------------------------------------------------------

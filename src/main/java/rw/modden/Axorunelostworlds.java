@@ -9,6 +9,7 @@ import rw.modden.client.ClientClassesInitializer;
 import rw.modden.combat.IntermediateInitializer;
 import rw.modden.command.CommandClasesInitializer;
 import rw.modden.server.ServerClassesInitializer;
+import rw.modden.world.dimension.DimensionInitializer;
 
 public class Axorunelostworlds implements ModInitializer {
 	public static final String MOD_ID = "axorunelostworlds";
@@ -22,6 +23,7 @@ public class Axorunelostworlds implements ModInitializer {
 		IntermediateInitializer.initialize();
 		CommandClasesInitializer.initialize();
 		ServerClassesInitializer.initialize();
+		DimensionInitializer.initialize();
 		if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT)
 			ClientClassesInitializer.initialize();
 	}

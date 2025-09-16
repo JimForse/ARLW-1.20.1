@@ -1,0 +1,25 @@
+{
+  "effects": {
+    "sky_color": 1752240,
+    "fog_color": 0,
+    "water_color": 4159204,
+    "water_fog_color": 329011
+  },
+  "carvers": {},
+  "features": [],
+  "starts": [],
+  "spawners": {
+    "monster": [],
+    "creature": [],
+    "ambient": [],
+    "water_creature": [],
+    "water_ambient": [],
+    "misc": []
+  },
+  "spawn_costs": {},
+  "player_spawn_friendly": true,
+  "has_precipitation": false,
+  "temperature": -1.0,
+  "downfall": 0.0,
+  "category": "none"
+}

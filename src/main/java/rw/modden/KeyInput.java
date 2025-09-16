@@ -91,9 +91,8 @@ public class KeyInput {
                                 new Identifier(Axorunelostworlds.MOD_ID, "player_action"),
                                 new PacketByteBuf(Unpooled.buffer()).writeString("switch_character")));
                         // TODO: смена персонажей
-                    } else if (options.sneakKey.isPressed()||dashKey.isPressed()) {
-
                     }
+//                    else if (options.sneakKey.isPressed()||dashKey.isPressed()) {}
                 }
             }
         });
